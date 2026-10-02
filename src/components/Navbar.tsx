@@ -22,6 +22,7 @@ import {
   Smartphone
 } from 'lucide-react';
 import { PWAInstallButton } from './PWAInstallButton';
+import { PWAInstallModal } from './PWAInstallModal';
 
 export type ActiveTab =
   | 'calculator'
@@ -61,6 +62,7 @@ export const Navbar: React.FC<Props> = ({
   onSetGlobalBatchSizeL
 }) => {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [installModalOpen, setInstallModalOpen] = useState(false);
 
   const navItems = [
     { id: 'calculator', label: 'Калькулятор', icon: Calculator },
@@ -124,7 +126,7 @@ export const Navbar: React.FC<Props> = ({
             {/* Action buttons */}
             <div className="flex items-center gap-1.5 sm:gap-2">
               {/* Кнопка установки PWA */}
-              <PWAInstallButton />
+              <PWAInstallButton showTextOnMobile={true} />
 
               {/* Offline badge */}
               <div
@@ -293,8 +295,16 @@ export const Navbar: React.FC<Props> = ({
 
       {/* Мобильная панель «Ещё / Меню приложения» (Native Drawer Sheet) */}
       {mobileDrawerOpen && (
-        <div className="no-print sm:hidden fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-stone-900 rounded-t-3xl p-5 border-t border-stone-200 dark:border-stone-800 space-y-4 max-h-[85vh] overflow-y-auto shadow-2xl">
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setMobileDrawerOpen(false);
+          }}
+          className="no-print sm:hidden fixed inset-0 z-50 flex flex-col justify-end bg-black/75 backdrop-blur-xs overscroll-contain animate-in fade-in duration-150"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-stone-900 rounded-t-3xl p-5 border-t border-stone-200 dark:border-stone-800 space-y-4 max-h-[85dvh] overflow-y-auto overscroll-contain shadow-2xl relative"
+          >
             <div className="flex justify-between items-center border-b border-stone-100 dark:border-stone-800 pb-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center font-black">
@@ -305,10 +315,39 @@ export const Navbar: React.FC<Props> = ({
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setMobileDrawerOpen(false)}
                 className="p-1.5 rounded-full text-stone-400 hover:text-stone-600 dark:hover:text-stone-200"
               >
                 <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Блок: Установка мобильного приложения на Android / iOS */}
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/25 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-white/20 text-white flex items-center justify-center shrink-0">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="font-extrabold text-xs sm:text-sm flex items-center gap-1.5 leading-tight">
+                    <span>Установить на телефон</span>
+                    <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-white text-amber-900 font-black">PWA</span>
+                  </div>
+                  <p className="text-[11px] text-white/90 mt-0.5">
+                    Инструкция для Android и iPhone
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileDrawerOpen(false);
+                  setInstallModalOpen(true);
+                }}
+                className="px-3.5 py-2 rounded-xl bg-white text-amber-900 font-extrabold text-xs shadow-xs shrink-0 hover:bg-amber-50 active:scale-95 transition-all"
+              >
+                Открыть
               </button>
             </div>
 
@@ -322,6 +361,7 @@ export const Navbar: React.FC<Props> = ({
                 {[10, 15, 20, 25, 30].map(v => (
                   <button
                     key={v}
+                    type="button"
                     onClick={() => onSetGlobalBatchSizeL(v)}
                     className={`px-2 py-1 rounded-lg text-xs font-mono font-bold ${
                       globalBatchSizeL === v
@@ -338,6 +378,7 @@ export const Navbar: React.FC<Props> = ({
             {/* Ссылки на разделы */}
             <div className="grid grid-cols-2 gap-2 text-xs font-bold">
               <button
+                type="button"
                 onClick={() => handleMobileTabSelect('ai_lab')}
                 className={`p-3 rounded-2xl border flex items-center gap-2.5 transition-colors ${
                   activeTab === 'ai_lab'
@@ -350,6 +391,7 @@ export const Navbar: React.FC<Props> = ({
               </button>
 
               <button
+                type="button"
                 onClick={() => handleMobileTabSelect('logs')}
                 className={`p-3 rounded-2xl border flex items-center gap-2.5 transition-colors ${
                   activeTab === 'logs'
@@ -362,6 +404,7 @@ export const Navbar: React.FC<Props> = ({
               </button>
 
               <button
+                type="button"
                 onClick={() => handleMobileTabSelect('lifehacks')}
                 className={`p-3 rounded-2xl border flex items-center gap-2.5 transition-colors ${
                   activeTab === 'lifehacks'
@@ -374,6 +417,7 @@ export const Navbar: React.FC<Props> = ({
               </button>
 
               <button
+                type="button"
                 onClick={() => handleMobileTabSelect('community')}
                 className={`p-3 rounded-2xl border flex items-center gap-2.5 transition-colors ${
                   activeTab === 'community'
@@ -391,6 +435,7 @@ export const Navbar: React.FC<Props> = ({
               <div className="flex items-center justify-between p-2 rounded-xl bg-stone-50 dark:bg-stone-800">
                 <span className="text-xs font-semibold text-stone-700 dark:text-stone-300">Тема оформления:</span>
                 <button
+                  type="button"
                   onClick={() => setIsDarkMode(!isDarkMode)}
                   className="px-3 py-1.5 rounded-lg bg-white dark:bg-stone-700 text-xs font-bold text-stone-800 dark:text-stone-200 border border-stone-200 dark:border-stone-600 flex items-center gap-1.5 shadow-2xs"
                 >
@@ -401,6 +446,7 @@ export const Navbar: React.FC<Props> = ({
 
               <div className="grid grid-cols-2 gap-2">
                 <button
+                  type="button"
                   onClick={() => { setMobileDrawerOpen(false); onOpenCloudSync(); }}
                   className="p-2.5 rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 text-xs font-semibold flex items-center justify-center gap-1.5"
                 >
@@ -409,6 +455,7 @@ export const Navbar: React.FC<Props> = ({
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => { setMobileDrawerOpen(false); onOpenBeerXmlModal(); }}
                   className="p-2.5 rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 text-xs font-semibold flex items-center justify-center gap-1.5"
                 >
@@ -419,6 +466,7 @@ export const Navbar: React.FC<Props> = ({
             </div>
 
             <button
+              type="button"
               onClick={() => setMobileDrawerOpen(false)}
               className="w-full py-2.5 rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400 text-xs font-bold"
             >
@@ -427,6 +475,13 @@ export const Navbar: React.FC<Props> = ({
           </div>
         </div>
       )}
+
+      {/* Модальное окно установки PWA приложения на телефон / ПК */}
+      <PWAInstallModal
+        isOpen={installModalOpen}
+        onClose={() => setInstallModalOpen(false)}
+        defaultPlatform="android"
+      />
     </>
   );
 };

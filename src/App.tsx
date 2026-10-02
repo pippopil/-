@@ -18,6 +18,8 @@ import { LifehacksGuide } from './components/LifehacksGuide';
 import { CommunityFeed } from './components/CommunityFeed';
 import { PrintableBrewSheet } from './components/PrintableBrewSheet';
 import { CloudSyncModal } from './components/CloudSyncModal';
+import { PWAInstallModal } from './components/PWAInstallModal';
+import { Smartphone, X } from 'lucide-react';
 
 import {
   BrewLog,
@@ -67,6 +69,15 @@ export default function App() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  // Баннер установки PWA для мобильных
+  const [showMobileInstallBanner, setShowMobileInstallBanner] = useState<boolean>(() => {
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+    return !isStandalone;
+  });
+  const [installModalOpen, setInstallModalOpen] = useState(false);
 
   // Активная вкладка
   const [activeTab, setActiveTab] = useState<ActiveTab>('calculator');
@@ -539,6 +550,42 @@ export default function App() {
 
       {/* Основной контент */}
       <main className="no-print max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-20 sm:pb-8">
+        {/* Мобильный баннер установки приложения на телефон */}
+        {showMobileInstallBanner && (
+          <div className="sm:hidden mb-4 p-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/20 flex items-center justify-between gap-2.5 animate-in fade-in duration-150">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-white/20 text-white flex items-center justify-center shrink-0">
+                <Smartphone className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="font-extrabold text-xs leading-tight truncate">
+                  Установить МастерВарка на телефон
+                </div>
+                <div className="text-[10px] text-white/90 mt-0.5 truncate">
+                  Офлайн-база 34 рецептов и калькулятор
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setInstallModalOpen(true)}
+                className="px-3 py-1.5 rounded-xl bg-white text-amber-900 font-extrabold text-xs shadow-2xs hover:bg-amber-50 active:scale-95 transition-all"
+              >
+                Установить
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowMobileInstallBanner(false)}
+                className="p-1 rounded-lg text-white/80 hover:text-white"
+                title="Скрыть баннер"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'calculator' && (
           <RecipeBuilder
             recipe={currentRecipe}
@@ -645,6 +692,12 @@ export default function App() {
         onRestoreFullData={handleRestoreFullData}
         syncCode={syncCode}
         setSyncCode={setSyncCode}
+      />
+      {/* Модальное окно установки приложения на телефон / ПК */}
+      <PWAInstallModal
+        isOpen={installModalOpen}
+        onClose={() => setInstallModalOpen(false)}
+        defaultPlatform="android"
       />
     </div>
   );
