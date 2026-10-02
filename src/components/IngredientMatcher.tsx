@@ -12,6 +12,12 @@ import {
   getStandardBrewerStarterPack
 } from '../utils/ingredientNormalizer';
 import {
+  getKurskMaltSubstitute,
+  getHopAlternatives,
+  KURSK_MALT_PRODUCTS,
+  isKurskMalt
+} from '../utils/brewingSubstitutions';
+import {
   Search,
   Plus,
   Trash2,
@@ -176,7 +182,7 @@ export const IngredientMatcher: React.FC<Props> = ({
       const availableIngredients: string[] = [];
       const missingIngredients: RecipeMatchResult['missingIngredients'] = [];
 
-      // 1. Проверка солодов с использованием нормализатора синонимов
+      // 1. Проверка солодов с использованием нормализатора синонимов и аналогов Курского солода
       scaledRecipe.grains.forEach(grain => {
         totalItems += 1;
         const matched = inventory.find(
@@ -187,19 +193,34 @@ export const IngredientMatcher: React.FC<Props> = ({
           matchedItems += 1;
           availableIngredients.push(`${grain.name} (${grain.weightKg} кг)`);
         } else {
-          const invAmount = matched ? matched.amount : 0;
-          missingIngredients.push({
-            name: grain.name,
-            category: 'grain',
-            requiredAmount: grain.weightKg,
-            unit: 'кг',
-            inventoryAmount: invAmount,
-            differenceToBuy: Number(Math.max(0.1, grain.weightKg - invAmount).toFixed(2))
-          });
+          // Проверяем, есть ли аналог из Курского солода на складе
+          const kurskSub = getKurskMaltSubstitute(grain.name);
+          const matchedKurskInStock = kurskSub
+            ? inventory.find(
+                inv => inv.category === 'grain' && (isIngredientMatch(inv.name, kurskSub.kurskName) || (isKurskMalt(inv.name) && isIngredientMatch(inv.name, grain.name))) && inv.amount >= grain.weightKg
+              )
+            : null;
+
+          if (matchedKurskInStock) {
+            matchedItems += 1;
+            availableIngredients.push(`${grain.name} (Заменен на ${matchedKurskInStock.name}) (${grain.weightKg} кг)`);
+          } else {
+            const invAmount = matched ? matched.amount : 0;
+            missingIngredients.push({
+              name: grain.name,
+              category: 'grain',
+              requiredAmount: grain.weightKg,
+              unit: 'кг',
+              inventoryAmount: invAmount,
+              differenceToBuy: Number(Math.max(0.1, grain.weightKg - invAmount).toFixed(2)),
+              substituteSuggestion: kurskSub ? `Курский аналог: ${kurskSub.kurskName} (${kurskSub.colorEbc} EBC)` : undefined,
+              substituteName: kurskSub ? kurskSub.kurskName : undefined
+            });
+          }
         }
       });
 
-      // 2. Проверка хмелей
+      // 2. Проверка хмелей и подбор альтернатив
       scaledRecipe.hops.forEach(hop => {
         totalItems += 1;
         const matched = inventory.find(
@@ -210,15 +231,28 @@ export const IngredientMatcher: React.FC<Props> = ({
           matchedItems += 1;
           availableIngredients.push(`${hop.name} (${hop.weightG} г)`);
         } else {
-          const invAmount = matched ? matched.amount : 0;
-          missingIngredients.push({
-            name: hop.name,
-            category: 'hop',
-            requiredAmount: hop.weightG,
-            unit: 'г',
-            inventoryAmount: invAmount,
-            differenceToBuy: Number(Math.max(1, hop.weightG - invAmount).toFixed(1))
-          });
+          // Проверяем, есть ли альтернативный сорт хмеля в наличии
+          const alts = getHopAlternatives(hop.name);
+          const matchedAltInStock = alts
+            .map(alt => inventory.find(inv => inv.category === 'hop' && isIngredientMatch(inv.name, alt.name) && inv.amount >= hop.weightG))
+            .find(Boolean);
+
+          if (matchedAltInStock) {
+            matchedItems += 1;
+            availableIngredients.push(`${hop.name} (Заменен на ${matchedAltInStock.name}) (${hop.weightG} г)`);
+          } else {
+            const invAmount = matched ? matched.amount : 0;
+            missingIngredients.push({
+              name: hop.name,
+              category: 'hop',
+              requiredAmount: hop.weightG,
+              unit: 'г',
+              inventoryAmount: invAmount,
+              differenceToBuy: Number(Math.max(1, hop.weightG - invAmount).toFixed(1)),
+              substituteSuggestion: alts.length > 0 ? `Альтернативы: ${alts.slice(0, 3).map(a => a.name).join(', ')}` : undefined,
+              substituteName: alts.length > 0 ? alts[0].name : undefined
+            });
+          }
         }
       });
 
@@ -998,13 +1032,22 @@ export const IngredientMatcher: React.FC<Props> = ({
                           <ShoppingCart className="w-3.5 h-3.5 text-amber-600" />
                           <span>Что необходимо добавить/докупить на {globalBatchSizeL} л ({missingIngredients.length} поз.):</span>
                         </div>
-                        <ul className="space-y-1 text-xs text-stone-700 dark:text-stone-300">
+                        <ul className="space-y-1.5 text-xs text-stone-700 dark:text-stone-300">
                           {missingIngredients.map((item, idx) => (
-                            <li key={idx} className="flex justify-between items-center text-[11px]">
-                              <span>{item.name} (нужно: {item.requiredAmount} {item.unit}):</span>
-                              <b className="text-amber-700 dark:text-amber-400 font-mono">
-                                +{item.differenceToBuy} {item.unit}
-                              </b>
+                            <li key={idx} className="text-[11px] pb-1 border-b border-amber-200/50 dark:border-amber-900/40 last:border-0">
+                              <div className="flex justify-between items-center">
+                                <span className="font-medium text-stone-800 dark:text-stone-200">
+                                  {item.name} <span className="text-stone-500 font-normal">(нужно: {item.requiredAmount} {item.unit})</span>:
+                                </span>
+                                <b className="text-amber-700 dark:text-amber-400 font-mono">
+                                  +{item.differenceToBuy} {item.unit}
+                                </b>
+                              </div>
+                              {item.substituteSuggestion && (
+                                <div className="mt-0.5 text-[10px] text-amber-900 dark:text-amber-300 font-medium flex items-center gap-1 bg-amber-100/70 dark:bg-amber-900/40 px-2 py-0.5 rounded">
+                                  <span>💡 {item.substituteSuggestion}</span>
+                                </div>
+                              )}
                             </li>
                           ))}
                         </ul>

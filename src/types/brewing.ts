@@ -168,6 +168,9 @@ export interface RecipeMatchResult {
     unit: string;
     inventoryAmount: number;
     differenceToBuy: number;
+    substituteSuggestion?: string;
+    substituteAvailableInStock?: boolean;
+    substituteName?: string;
   }>;
 }
 

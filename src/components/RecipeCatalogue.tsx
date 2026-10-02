@@ -1,6 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { Recipe } from '../types/brewing';
-import { ebcToHex } from '../utils/brewingMath';
+import { ebcToHex, calculateBrewMetrics } from '../utils/brewingMath';
+import {
+  getKurskMaltSubstitute,
+  getHopAlternatives,
+  isKurskMalt
+} from '../utils/brewingSubstitutions';
 import {
   Search,
   Plus,
@@ -13,7 +18,9 @@ import {
   ArrowRight,
   Filter,
   CheckCircle2,
-  Calendar
+  Calendar,
+  Sparkles,
+  Layers
 } from 'lucide-react';
 
 interface Props {
@@ -46,6 +53,41 @@ export const RecipeCatalogue: React.FC<Props> = ({
   const categories = useMemo(() => {
     return Array.from(new Set(recipes.map(r => r.category)));
   }, [recipes]);
+
+  // Адаптация любого рецепта под Курский солод
+  const handleAdaptToKursk = (rec: Recipe) => {
+    const adaptedGrains = rec.grains.map(g => {
+      const sub = getKurskMaltSubstitute(g.name);
+      if (!sub) return g;
+      return {
+        ...g,
+        name: sub.kurskName,
+        potentialSg: sub.potentialSg,
+        colorEbc: sub.colorEbc,
+        weightKg: Number((g.weightKg * sub.ratio).toFixed(2))
+      };
+    });
+    const calculated = calculateBrewMetrics({
+      batchSizeL: rec.batchSizeL,
+      boilTimeMin: rec.boilTimeMin,
+      efficiencyPercent: rec.efficiencyPercent,
+      grainRatioLPerKg: rec.grainRatioLPerKg,
+      grainTempC: rec.grainTempC,
+      targetCarbonationVol: rec.targetCarbonationVol,
+      beerTempAtBottlingC: rec.beerTempAtBottlingC,
+      grains: adaptedGrains,
+      hops: rec.hops,
+      yeast: rec.yeast
+    });
+    const adaptedRecipe: Recipe = {
+      ...rec,
+      name: `${rec.name} (на Курском солоде)`,
+      grains: adaptedGrains,
+      calculated,
+      isCustom: true
+    };
+    onSelectRecipe(adaptedRecipe);
+  };
 
   const filteredRecipes = useMemo(() => {
     return recipes.filter(r => {
@@ -235,6 +277,37 @@ export const RecipeCatalogue: React.FC<Props> = ({
                   <div className="flex items-center gap-1 text-stone-500">
                     <span className="font-semibold text-stone-700 dark:text-stone-300">Дрожжи:</span>
                     <span className="line-clamp-1">{recipe.yeast.name}</span>
+                  </div>
+
+                  {/* Блок доступных аналогов (Курский солод и альтернативы хмеля) */}
+                  <div className="pt-2 mt-2 border-t border-stone-100 dark:border-stone-800/60 space-y-1.5">
+                    {recipe.grains.some(g => !isKurskMalt(g.name)) ? (
+                      <div className="flex items-center justify-between gap-1 p-1.5 rounded-lg bg-amber-500/10 dark:bg-amber-950/40 border border-amber-300/60 dark:border-amber-800/60">
+                        <span className="text-[10px] text-amber-900 dark:text-amber-300 font-semibold flex items-center gap-1 truncate">
+                          <Layers className="w-3 h-3 text-amber-600 shrink-0" />
+                          <span>Доступны аналоги Курского солода</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleAdaptToKursk(recipe)}
+                          className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-600 hover:bg-amber-700 text-white transition-colors shrink-0 shadow-2xs"
+                          title="Пересчитать рецепт на отечественный Курский солод"
+                        >
+                          <span>🇷🇺 На Курский</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>Рецепт уже на Курском солоде</span>
+                      </div>
+                    )}
+                    <div className="text-[10px] text-stone-500 truncate" title={recipe.hops.flatMap(h => getHopAlternatives(h.name).slice(0, 1).map(a => `${h.name} ➔ ${a.name}`)).join('; ')}>
+                      🌿 <span className="font-medium text-stone-600 dark:text-stone-400">Замены хмеля:</span> {recipe.hops.slice(0, 2).map(h => {
+                        const a = getHopAlternatives(h.name)[0];
+                        return a ? `${h.name}→${a.name}` : h.name;
+                      }).join(', ')}
+                    </div>
                   </div>
                 </div>
               </div>
