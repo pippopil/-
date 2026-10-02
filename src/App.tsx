@@ -46,9 +46,11 @@ export default function App() {
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
+      document.body.classList.add('dark');
       localStorage.setItem('masterbrew_theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      document.body.classList.remove('dark');
       localStorage.setItem('masterbrew_theme', 'light');
     }
   }, [isDarkMode]);
@@ -74,7 +76,13 @@ export default function App() {
     const saved = localStorage.getItem('masterbrew_recipes');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Объединяем с новыми 34 эталонными рецептами, если их не было в кэше
+          const existingIds = new Set(parsed.map((r: any) => r.id));
+          const missingNew = INITIAL_RECIPES.filter(r => !existingIds.has(r.id));
+          return [...parsed, ...missingNew];
+        }
       } catch (e) {
         console.error('Failed to parse recipes from storage', e);
       }
@@ -262,6 +270,15 @@ export default function App() {
     localStorage.setItem('masterbrew_sync_code', syncCode);
   }, [syncCode]);
 
+  // Глобальный целевой объем партии (в литрах)
+  const [globalBatchSizeL, setGlobalBatchSizeL] = useState<number>(() => {
+    const saved = localStorage.getItem('masterbrew_batch_size');
+    return saved ? parseFloat(saved) || 20 : 20;
+  });
+  useEffect(() => {
+    localStorage.setItem('masterbrew_batch_size', String(globalBatchSizeL));
+  }, [globalBatchSizeL]);
+
   const [cloudModalOpen, setCloudModalOpen] = useState(false);
 
   // Автосохранение всех сущностей в LocalStorage (Offline-First)
@@ -395,6 +412,89 @@ export default function App() {
     setActiveTab('ai_lab');
   };
 
+  // Создание авторского рецепта на основе остатков из кладовой
+  const handleCreateCustomFromPantry = () => {
+    const pantryGrains = inventory.filter(i => i.category === 'grain' && i.amount > 0);
+    const pantryHops = inventory.filter(i => i.category === 'hop' && i.amount > 0);
+    const pantryYeast = inventory.find(i => i.category === 'yeast' && i.amount > 0);
+
+    const grains = pantryGrains.slice(0, 3).map((g, idx) => ({
+      id: `g_cust_${Date.now()}_${idx}`,
+      name: g.name,
+      weightKg: Math.min(g.amount, idx === 0 ? 4.5 : 0.5),
+      potentialSg: g.potentialSgOrAlpha || 1.037,
+      colorEbc: g.colorEbc || 5.0,
+      type: (idx === 0 ? 'base' : 'caramel') as any
+    }));
+
+    const hops = pantryHops.slice(0, 2).map((h, idx) => ({
+      id: `h_cust_${Date.now()}_${idx}`,
+      name: h.name,
+      weightG: Math.min(h.amount, idx === 0 ? 20 : 30),
+      alphaAcid: h.potentialSgOrAlpha || 10.0,
+      boilTimeMin: idx === 0 ? 60 : 15,
+      use: 'boil' as const
+    }));
+
+    const newRecipe: Recipe = {
+      id: `recipe_custom_pantry_${Date.now()}`,
+      name: 'Авторский эль из запасов',
+      style: 'American Pale Ale',
+      category: 'Эли / Хмелевые',
+      description: 'Сварен из ингредиентов, имеющихся в домашней кладовой пивовара.',
+      author: 'Вы',
+      batchSizeL: globalBatchSizeL,
+      boilTimeMin: 60,
+      efficiencyPercent: 72,
+      grainRatioLPerKg: 3.5,
+      grainTempC: 20,
+      targetCarbonationVol: 2.4,
+      beerTempAtBottlingC: 19,
+      grains: grains.length > 0 ? grains : [
+        { id: `g_1`, name: 'Pilsner Malt', weightKg: 4.5, potentialSg: 1.037, colorEbc: 3.5, type: 'base' }
+      ],
+      hops: hops.length > 0 ? hops : [
+        { id: `h_1`, name: 'Magnum', weightG: 20, alphaAcid: 14.0, boilTimeMin: 60, use: 'boil' }
+      ],
+      mashSchedule: [
+        { id: 'm1', name: 'Осахаривание', tempC: 66, timeMin: 60, type: 'maltose' },
+        { id: 'm2', name: 'Мэшаут', tempC: 78, timeMin: 10, type: 'mashout' }
+      ],
+      yeast: pantryYeast ? {
+        name: pantryYeast.name,
+        lab: 'Fermentis',
+        form: 'dry',
+        type: 'ale',
+        cellsPerGramOrVial: 20,
+        attenuationPercent: 80,
+        tempRange: [18, 24]
+      } : INITIAL_RECIPES[1].yeast,
+      calculated: {} as any,
+      tags: ['Из кладовой', 'Авторский'],
+      isCustom: true,
+      collection: 'my_recipes',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    newRecipe.calculated = calculateBrewMetrics({
+      batchSizeL: newRecipe.batchSizeL,
+      boilTimeMin: newRecipe.boilTimeMin,
+      efficiencyPercent: newRecipe.efficiencyPercent,
+      grainRatioLPerKg: newRecipe.grainRatioLPerKg,
+      grainTempC: newRecipe.grainTempC,
+      targetCarbonationVol: newRecipe.targetCarbonationVol,
+      beerTempAtBottlingC: newRecipe.beerTempAtBottlingC,
+      grains: newRecipe.grains,
+      hops: newRecipe.hops,
+      yeast: newRecipe.yeast
+    });
+
+    setRecipes([newRecipe, ...recipes]);
+    setCurrentRecipe(newRecipe);
+    setActiveTab('calculator');
+  };
+
   // Печать варочного листа в PDF
   const handlePrintSheet = () => {
     window.print();
@@ -433,10 +533,12 @@ export default function App() {
         onOpenBeerXmlModal={() => setCloudModalOpen(true)}
         isOffline={isOffline}
         activeBatchesCount={activeBatchesCount}
+        globalBatchSizeL={globalBatchSizeL}
+        onSetGlobalBatchSizeL={setGlobalBatchSizeL}
       />
 
       {/* Основной контент */}
-      <main className="no-print max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+      <main className="no-print max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-20 sm:pb-8">
         {activeTab === 'calculator' && (
           <RecipeBuilder
             recipe={currentRecipe}
@@ -457,6 +559,9 @@ export default function App() {
             recipes={recipes}
             onUpdateInventory={setInventory}
             onSelectRecipe={handleSelectRecipe}
+            globalBatchSizeL={globalBatchSizeL}
+            onSetGlobalBatchSizeL={setGlobalBatchSizeL}
+            onCreateCustomRecipeFromPantry={handleCreateCustomFromPantry}
           />
         )}
 
