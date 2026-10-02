@@ -1,0 +1,546 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState, useEffect } from 'react';
+import {
+  ActiveTab,
+  Navbar
+} from './components/Navbar';
+import { RecipeBuilder } from './components/RecipeBuilder';
+import { IngredientMatcher } from './components/IngredientMatcher';
+import { RecipeCatalogue } from './components/RecipeCatalogue';
+import { AiStudioLabelGenerator } from './components/AiStudioLabelGenerator';
+import { BrewCalendar } from './components/BrewCalendar';
+import { BrewLogJournal } from './components/BrewLogJournal';
+import { LifehacksGuide } from './components/LifehacksGuide';
+import { CommunityFeed } from './components/CommunityFeed';
+import { PrintableBrewSheet } from './components/PrintableBrewSheet';
+import { CloudSyncModal } from './components/CloudSyncModal';
+
+import {
+  BrewLog,
+  CommunityPost,
+  FermentationBatch,
+  InventoryItem,
+  Lifehack,
+  Recipe
+} from './types/brewing';
+import {
+  INITIAL_INVENTORY,
+  INITIAL_LIFEHACKS,
+  INITIAL_POSTS,
+  INITIAL_RECIPES
+} from './data/defaultData';
+import { calculateBrewMetrics } from './utils/brewingMath';
+
+export default function App() {
+  // Тема (светлая / тёмная)
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('masterbrew_theme');
+    if (saved) return saved === 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('masterbrew_theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('masterbrew_theme', 'light');
+    }
+  }, [isDarkMode]);
+
+  // Офлайн статус
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Активная вкладка
+  const [activeTab, setActiveTab] = useState<ActiveTab>('calculator');
+
+  // Рецепты (с сохранением в LocalStorage для работы офлайн)
+  const [recipes, setRecipes] = useState<Recipe[]>(() => {
+    const saved = localStorage.getItem('masterbrew_recipes');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse recipes from storage', e);
+      }
+    }
+    return INITIAL_RECIPES;
+  });
+
+  // Текущий редактируемый рецепт
+  const [currentRecipe, setCurrentRecipe] = useState<Recipe>(() => {
+    return recipes[0] || INITIAL_RECIPES[0];
+  });
+
+  // Кладовая (Запасы)
+  const [inventory, setInventory] = useState<InventoryItem[]>(() => {
+    const saved = localStorage.getItem('masterbrew_inventory');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return INITIAL_INVENTORY;
+  });
+
+  // Партии в календаре
+  const [batches, setBatches] = useState<FermentationBatch[]>(() => {
+    const saved = localStorage.getItem('masterbrew_batches');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    // Пример начальной активной партии
+    const initRecipe = INITIAL_RECIPES[0];
+    return [
+      {
+        id: 'batch_demo_1',
+        recipeId: initRecipe.id,
+        recipeName: initRecipe.name,
+        batchNumber: 'Варка #1',
+        startDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        stages: [
+          {
+            id: 'st_1',
+            name: 'День варки (Brew Day)',
+            description: 'Затирание, охмеление, охлаждение',
+            dayOffset: 0,
+            durationDays: 1,
+            targetTempC: 67,
+            isCompleted: true,
+            actionRequired: 'Внесены дрожжи US-05'
+          },
+          {
+            id: 'st_2',
+            name: 'Главное брожение',
+            description: 'Интенсивное брожение при 19°C',
+            dayOffset: 1,
+            durationDays: 7,
+            targetTempC: 19,
+            isCompleted: true,
+            actionRequired: 'Температура 19-20°C выдержана'
+          },
+          {
+            id: 'st_3',
+            name: 'Сухое охмеление (Dry Hopping)',
+            description: 'Внесение 50г Mosaic без доступа воздуха',
+            dayOffset: 8,
+            durationDays: 3,
+            targetTempC: 18,
+            isCompleted: true,
+            actionRequired: 'Хмель внесен в мешочке'
+          },
+          {
+            id: 'st_4',
+            name: 'Розлив и внесение декстрозы',
+            description: 'Розлив по бутылкам + 140г декстрозы',
+            dayOffset: 11,
+            durationDays: 1,
+            targetTempC: 20,
+            isCompleted: false,
+            actionRequired: 'Продезинфицировать 40 бутылок'
+          },
+          {
+            id: 'st_5',
+            name: 'Карбонизация в тепле',
+            description: '14 дней в темноте при 21°C',
+            dayOffset: 12,
+            durationDays: 14,
+            targetTempC: 21,
+            isCompleted: false,
+            actionRequired: 'Контроль надутости контрольной ПЭТ бутылки'
+          },
+          {
+            id: 'st_6',
+            name: 'Холодное созревание',
+            description: 'Выдержка в холодильнике при 4°C',
+            dayOffset: 26,
+            durationDays: 14,
+            targetTempC: 4,
+            isCompleted: false,
+            actionRequired: 'Охлаждение'
+          },
+          {
+            id: 'st_7',
+            name: 'Готово к дегустации!',
+            description: 'Пиво созрело и осветлилось',
+            dayOffset: 40,
+            durationDays: 0,
+            targetTempC: 8,
+            isCompleted: false,
+            actionRequired: 'Дегустация'
+          }
+        ],
+        notes: 'Отличный аромат хмеля Citra на вирпуле!',
+        isFinished: false
+      }
+    ];
+  });
+
+  // Журнал варок
+  const [logs, setLogs] = useState<BrewLog[]>(() => {
+    const saved = localStorage.getItem('masterbrew_logs');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    const r = INITIAL_RECIPES[0];
+    return [
+      {
+        id: 'log_init_1',
+        recipeId: r.id,
+        recipeName: r.name,
+        batchNumber: 'Варка #1 (Citra IPA)',
+        brewDate: '2026-03-01',
+        targetOg: r.calculated.ogSg,
+        targetFg: r.calculated.fgSg,
+        targetAbv: r.calculated.abv,
+        actualOg: 1.054,
+        actualFg: 1.011,
+        actualAbv: 5.6,
+        actualEfficiency: 73,
+        mashPh: 5.35,
+        fermentTempC: 19.5,
+        bjcpScore: 47,
+        tastingNotes: {
+          aroma: 'Взрывной тропический аромат манго, грейпфрута и свежей сосны.',
+          appearance: 'Красивый глубокий золотистый цвет (14 EBC), стойкая пенная шапка.',
+          flavor: 'Чистая солодовая подложка с мягкой сочной хмелевой горчинкой.',
+          mouthfeel: 'Освежающее среднее тело, правильная карбонизация.',
+          overall: 'Превосходный крафтовый IPA уровня победителя конкурса.'
+        },
+        notes: 'Промывочную воду держал строго 76°C, вирпул сделал при 82°C. Никаких танинов.',
+        status: 'ready'
+      }
+    ];
+  });
+
+  // Лайфхаки
+  const [lifehacks, setLifehacks] = useState<Lifehack[]>(() => {
+    const saved = localStorage.getItem('masterbrew_lifehacks');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return INITIAL_LIFEHACKS;
+  });
+
+  // Посты сообщества
+  const [posts, setPosts] = useState<CommunityPost[]>(() => {
+    const saved = localStorage.getItem('masterbrew_posts');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return INITIAL_POSTS;
+  });
+
+  // Облачный код синхронизации
+  const [syncCode, setSyncCode] = useState<string>(() => {
+    return localStorage.getItem('masterbrew_sync_code') || 'BREW-94X';
+  });
+  useEffect(() => {
+    localStorage.setItem('masterbrew_sync_code', syncCode);
+  }, [syncCode]);
+
+  const [cloudModalOpen, setCloudModalOpen] = useState(false);
+
+  // Автосохранение всех сущностей в LocalStorage (Offline-First)
+  useEffect(() => {
+    localStorage.setItem('masterbrew_recipes', JSON.stringify(recipes));
+  }, [recipes]);
+  useEffect(() => {
+    localStorage.setItem('masterbrew_inventory', JSON.stringify(inventory));
+  }, [inventory]);
+  useEffect(() => {
+    localStorage.setItem('masterbrew_batches', JSON.stringify(batches));
+  }, [batches]);
+  useEffect(() => {
+    localStorage.setItem('masterbrew_logs', JSON.stringify(logs));
+  }, [logs]);
+  useEffect(() => {
+    localStorage.setItem('masterbrew_lifehacks', JSON.stringify(lifehacks));
+  }, [lifehacks]);
+  useEffect(() => {
+    localStorage.setItem('masterbrew_posts', JSON.stringify(posts));
+  }, [posts]);
+
+  // Сохранение рецепта в базу
+  const handleSaveRecipe = (recipeToSave: Recipe) => {
+    const exists = recipes.some(r => r.id === recipeToSave.id);
+    if (exists) {
+      setRecipes(recipes.map(r => (r.id === recipeToSave.id ? recipeToSave : r)));
+    } else {
+      setRecipes([recipeToSave, ...recipes]);
+    }
+  };
+
+  // Создание нового кастомного рецепта
+  const handleCreateNewRecipe = () => {
+    const blankRecipe: Recipe = {
+      id: `recipe_custom_${Date.now()}`,
+      name: 'Новый авторский рецепт',
+      style: 'American Pale Ale',
+      category: 'Эли / Хмелевые',
+      description: 'Авторский крафтовый рецепт с чистой солодовой засыпью и сбалансированным охмелением.',
+      author: 'Вы',
+      batchSizeL: 20,
+      boilTimeMin: 60,
+      efficiencyPercent: 72,
+      grainRatioLPerKg: 3.5,
+      grainTempC: 20,
+      targetCarbonationVol: 2.4,
+      beerTempAtBottlingC: 19,
+      grains: [
+        { id: `g_${Date.now()}_1`, name: 'Pale Ale Malt', weightKg: 4.5, potentialSg: 1.038, colorEbc: 6.0, type: 'base' },
+        { id: `g_${Date.now()}_2`, name: 'Carapils', weightKg: 0.3, potentialSg: 1.033, colorEbc: 4.5, type: 'caramel' }
+      ],
+      hops: [
+        { id: `h_${Date.now()}_1`, name: 'Magnum', weightG: 15, alphaAcid: 14.0, boilTimeMin: 60, use: 'boil' },
+        { id: `h_${Date.now()}_2`, name: 'Cascade', weightG: 30, alphaAcid: 6.0, boilTimeMin: 15, use: 'boil' }
+      ],
+      mashSchedule: [
+        { id: 'm1', name: 'Осахаривание (Мальтозная)', tempC: 66, timeMin: 60, type: 'maltose' },
+        { id: 'm2', name: 'Мэшаут', tempC: 78, timeMin: 10, type: 'mashout' }
+      ],
+      yeast: {
+        name: 'SafAle US-05',
+        lab: 'Fermentis',
+        form: 'dry',
+        type: 'ale',
+        cellsPerGramOrVial: 20,
+        attenuationPercent: 81,
+        tempRange: [18, 26]
+      },
+      calculated: {} as any,
+      tags: ['Авторский', 'Крафт'],
+      isCustom: true,
+      collection: 'my_recipes',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    blankRecipe.calculated = calculateBrewMetrics({
+      batchSizeL: blankRecipe.batchSizeL,
+      boilTimeMin: blankRecipe.boilTimeMin,
+      efficiencyPercent: blankRecipe.efficiencyPercent,
+      grainRatioLPerKg: blankRecipe.grainRatioLPerKg,
+      grainTempC: blankRecipe.grainTempC,
+      targetCarbonationVol: blankRecipe.targetCarbonationVol,
+      beerTempAtBottlingC: blankRecipe.beerTempAtBottlingC,
+      grains: blankRecipe.grains,
+      hops: blankRecipe.hops,
+      yeast: blankRecipe.yeast
+    });
+
+    setRecipes([blankRecipe, ...recipes]);
+    setCurrentRecipe(blankRecipe);
+    setActiveTab('calculator');
+  };
+
+  const handleSelectRecipe = (r: Recipe) => {
+    setCurrentRecipe(r);
+    setActiveTab('calculator');
+  };
+
+  const handleToggleFavorite = (recipeId: string) => {
+    setRecipes(
+      recipes.map(r => {
+        if (r.id !== recipeId) return r;
+        const isFav = r.collection === 'favorites';
+        return { ...r, collection: isFav ? undefined : 'favorites' };
+      })
+    );
+  };
+
+  const handleSetCollection = (recipeId: string, col: Recipe['collection']) => {
+    setRecipes(
+      recipes.map(r => (r.id === recipeId ? { ...r, collection: col } : r))
+    );
+  };
+
+  const handleDeleteRecipe = (recipeId: string) => {
+    setRecipes(recipes.filter(r => r.id !== recipeId));
+    if (currentRecipe.id === recipeId && recipes.length > 1) {
+      setCurrentRecipe(recipes.find(r => r.id !== recipeId) || INITIAL_RECIPES[0]);
+    }
+  };
+
+  const handleStartBrewBatch = (r: Recipe) => {
+    setCurrentRecipe(r);
+    setActiveTab('calendar');
+  };
+
+  const handleSendToAiStudio = (r: Recipe) => {
+    setCurrentRecipe(r);
+    setActiveTab('ai_lab');
+  };
+
+  // Печать варочного листа в PDF
+  const handlePrintSheet = () => {
+    window.print();
+  };
+
+  // Полный снимок данных для облачной синхронизации
+  const fullDataPayload = {
+    recipes,
+    inventory,
+    batches,
+    logs,
+    lifehacks,
+    version: '1.0'
+  };
+
+  const handleRestoreFullData = (data: any) => {
+    if (data.recipes && Array.isArray(data.recipes)) setRecipes(data.recipes);
+    if (data.inventory && Array.isArray(data.inventory)) setInventory(data.inventory);
+    if (data.batches && Array.isArray(data.batches)) setBatches(data.batches);
+    if (data.logs && Array.isArray(data.logs)) setLogs(data.logs);
+    if (data.lifehacks && Array.isArray(data.lifehacks)) setLifehacks(data.lifehacks);
+  };
+
+  const activeBatchesCount = batches.filter(b => !b.isFinished).length;
+
+  return (
+    <div className="min-h-screen bg-stone-100/60 dark:bg-stone-950 text-stone-900 dark:text-stone-100 font-sans transition-colors">
+      {/* Навигационная панель */}
+      <Navbar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isDarkMode={isDarkMode}
+        setIsDarkMode={setIsDarkMode}
+        onOpenCloudSync={() => setCloudModalOpen(true)}
+        onPrintSheet={handlePrintSheet}
+        onOpenBeerXmlModal={() => setCloudModalOpen(true)}
+        isOffline={isOffline}
+        activeBatchesCount={activeBatchesCount}
+      />
+
+      {/* Основной контент */}
+      <main className="no-print max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        {activeTab === 'calculator' && (
+          <RecipeBuilder
+            recipe={currentRecipe}
+            onUpdateRecipe={(updated) => {
+              setCurrentRecipe(updated);
+              setRecipes(recipes.map(r => (r.id === updated.id ? updated : r)));
+            }}
+            onSaveRecipe={handleSaveRecipe}
+            onSendToAiStudio={handleSendToAiStudio}
+            onStartBrewBatch={handleStartBrewBatch}
+            onPrintSheet={handlePrintSheet}
+          />
+        )}
+
+        {activeTab === 'matcher' && (
+          <IngredientMatcher
+            inventory={inventory}
+            recipes={recipes}
+            onUpdateInventory={setInventory}
+            onSelectRecipe={handleSelectRecipe}
+          />
+        )}
+
+        {activeTab === 'catalogue' && (
+          <RecipeCatalogue
+            recipes={recipes}
+            onSelectRecipe={handleSelectRecipe}
+            onCreateNewRecipe={handleCreateNewRecipe}
+            onToggleFavorite={handleToggleFavorite}
+            onSetCollection={handleSetCollection}
+            onDeleteRecipe={handleDeleteRecipe}
+            onExportBeerXml={(r) => {
+              setCurrentRecipe(r);
+              setCloudModalOpen(true);
+            }}
+            onPrintRecipe={(r) => {
+              setCurrentRecipe(r);
+              setTimeout(() => window.print(), 100);
+            }}
+            onStartBrewBatch={handleStartBrewBatch}
+          />
+        )}
+
+        {activeTab === 'ai_lab' && (
+          <AiStudioLabelGenerator
+            recipe={currentRecipe}
+            onUpdateRecipe={(updated) => {
+              setCurrentRecipe(updated);
+              setRecipes(recipes.map(r => (r.id === updated.id ? updated : r)));
+            }}
+          />
+        )}
+
+        {activeTab === 'calendar' && (
+          <BrewCalendar
+            batches={batches}
+            recipes={recipes}
+            onUpdateBatches={setBatches}
+            onOpenRecipe={handleSelectRecipe}
+          />
+        )}
+
+        {activeTab === 'logs' && (
+          <BrewLogJournal
+            logs={logs}
+            recipes={recipes}
+            onUpdateLogs={setLogs}
+          />
+        )}
+
+        {activeTab === 'lifehacks' && (
+          <LifehacksGuide
+            lifehacks={lifehacks}
+            onUpdateLifehacks={setLifehacks}
+          />
+        )}
+
+        {activeTab === 'community' && (
+          <CommunityFeed
+            posts={posts}
+            recipes={recipes}
+            onUpdatePosts={setPosts}
+          />
+        )}
+      </main>
+
+      {/* Выделенный лист для печати варочного листа в PDF через браузер */}
+      <PrintableBrewSheet recipe={currentRecipe} />
+
+      {/* Модальное окно синхронизации, BeerXML и бэкапов */}
+      <CloudSyncModal
+        isOpen={cloudModalOpen}
+        onClose={() => setCloudModalOpen(false)}
+        currentRecipe={currentRecipe}
+        onImportRecipe={(imported) => {
+          setRecipes([imported, ...recipes]);
+          setCurrentRecipe(imported);
+          setActiveTab('calculator');
+        }}
+        fullDataPayload={fullDataPayload}
+        onRestoreFullData={handleRestoreFullData}
+        syncCode={syncCode}
+        setSyncCode={setSyncCode}
+      />
+    </div>
+  );
+}
