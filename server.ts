@@ -284,7 +284,53 @@ app.post('/api/community/posts', (req, res) => {
   res.json({ success: true, post: newPost });
 });
 
-// 5. Скачивание архива с исходным кодом проекта для GitHub и компиляции в APK
+// 5. Загрузка рецептов по URL из интернета (BeerXML, JSON, веб-страницы) без CORS-ограничений
+app.post('/api/recipes/fetch-url', async (req, res) => {
+  const { url } = req.body;
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ success: false, error: 'URL is required' });
+  }
+
+  try {
+    const targetUrl = url.trim();
+    if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+      return res.status(400).json({ success: false, error: 'Некорректная ссылка (должна начинаться с http:// или https://)' });
+    }
+
+    const response = await fetch(targetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 MasterVarka/1.0',
+        'Accept': 'text/xml, application/xml, application/json, text/plain, */*'
+      },
+      signal: AbortSignal.timeout(12000)
+    });
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        success: false,
+        error: `Сервер источника вернул статус ${response.status}: ${response.statusText}`
+      });
+    }
+
+    const content = await response.text();
+    const contentType = response.headers.get('content-type') || 'text/plain';
+
+    res.json({
+      success: true,
+      content,
+      contentType,
+      url: targetUrl
+    });
+  } catch (err: any) {
+    console.error('Error fetching recipe URL:', err);
+    res.status(500).json({
+      success: false,
+      error: `Не удалось загрузить данные по ссылке: ${err.message || 'Ошибка сети'}`
+    });
+  }
+});
+
+// 6. Скачивание архива с исходным кодом проекта для GitHub и компиляции в APK
 app.get('/api/project/download-zip', (_req, res) => {
   const outputPath = '/tmp/mastervarka-source.zip';
   const scriptPath = path.resolve(__dirname, 'scripts', 'export_zip.py');

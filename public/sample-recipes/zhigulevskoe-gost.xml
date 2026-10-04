@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RECIPES>
+  <RECIPE>
+    <NAME>Жигулевское СССР (ГОСТ 3473-78)</NAME>
+    <VERSION>1</VERSION>
+    <TYPE>All Grain</TYPE>
+    <STYLE>
+      <NAME>Czech Premium Pale Lager</NAME>
+      <CATEGORY>3. Czech Lager</CATEGORY>
+      <VERSION>1</VERSION>
+      <CATEGORY_NUMBER>3</CATEGORY_NUMBER>
+      <STYLE_LETTER>B</STYLE_LETTER>
+      <STYLE_GUIDE>BJCP 2021</STYLE_GUIDE>
+      <TYPE>Lager</TYPE>
+    </STYLE>
+    <BREWER>Куйбышевский Пивзавод</BREWER>
+    <BATCH_SIZE>20.0</BATCH_SIZE>
+    <BOIL_SIZE>24.5</BOIL_SIZE>
+    <BOIL_TIME>75</BOIL_TIME>
+    <EFFICIENCY>75.0</EFFICIENCY>
+    <NOTES>Исторический советский рецепт Жигулевского пива по ГОСТ 3473-78.</NOTES>
+    <FERMENTABLES>
+      <FERMENTABLE>
+        <NAME>Pilsner Malt</NAME>
+        <VERSION>1</VERSION>
+        <TYPE>Grain</TYPE>
+        <AMOUNT>3.200</AMOUNT>
+        <YIELD>78.0</YIELD>
+        <COLOR>1.8</COLOR>
+      </FERMENTABLE>
+      <FERMENTABLE>
+        <NAME>Flaked Barley (Ячменные хлопья)</NAME>
+        <VERSION>1</VERSION>
+        <TYPE>Adjunct</TYPE>
+        <AMOUNT>0.550</AMOUNT>
+        <YIELD>70.0</YIELD>
+        <COLOR>1.8</COLOR>
+      </FERMENTABLE>
+      <FERMENTABLE>
+        <NAME>Vienna Malt</NAME>
+        <VERSION>1</VERSION>
+        <TYPE>Grain</TYPE>
+        <AMOUNT>0.300</AMOUNT>
+        <YIELD>76.0</YIELD>
+        <COLOR>4.0</COLOR>
+      </FERMENTABLE>
+    </FERMENTABLES>
+    <HOPS>
+      <HOP>
+        <NAME>Magnum</NAME>
+        <VERSION>1</VERSION>
+        <ALPHA>14.0</ALPHA>
+        <AMOUNT>0.0100</AMOUNT>
+        <USE>Boil</USE>
+        <TIME>60</TIME>
+      </HOP>
+      <HOP>
+        <NAME>Saaz (Жатецкий)</NAME>
+        <VERSION>1</VERSION>
+        <ALPHA>3.8</ALPHA>
+        <AMOUNT>0.0250</AMOUNT>
+        <USE>Boil</USE>
+        <TIME>20</TIME>
+      </HOP>
+      <HOP>
+        <NAME>Saaz (Жатецкий)</NAME>
+        <VERSION>1</VERSION>
+        <ALPHA>3.8</ALPHA>
+        <AMOUNT>0.0200</AMOUNT>
+        <USE>Boil</USE>
+        <TIME>5</TIME>
+      </HOP>
+    </HOPS>
+    <YEASTS>
+      <YEAST>
+        <NAME>Fermentis Saflager W-34/70</NAME>
+        <VERSION>1</VERSION>
+        <TYPE>Lager</TYPE>
+        <FORM>Dry</FORM>
+        <LABORATORY>Fermentis</LABORATORY>
+        <ATTENUATION>82.0</ATTENUATION>
+      </YEAST>
+    </YEASTS>
+    <MASH>
+      <NAME>Step Infusion</NAME>
+      <VERSION>1</VERSION>
+      <GRAIN_TEMP>20.0</GRAIN_TEMP>
+      <MASH_STEPS>
+        <MASH_STEP>
+          <NAME>Protein Rest</NAME>
+          <VERSION>1</VERSION>
+          <TYPE>Temperature</TYPE>
+          <STEP_TEMP>52.0</STEP_TEMP>
+          <STEP_TIME>20</STEP_TIME>
+        </MASH_STEP>
+        <MASH_STEP>
+          <NAME>Maltose Rest</NAME>
+          <VERSION>1</VERSION>
+          <TYPE>Temperature</TYPE>
+          <STEP_TEMP>63.0</STEP_TEMP>
+          <STEP_TIME>40</STEP_TIME>
+        </MASH_STEP>
+        <MASH_STEP>
+          <NAME>Dextrin Rest</NAME>
+          <VERSION>1</VERSION>
+          <TYPE>Temperature</TYPE>
+          <STEP_TEMP>72.0</STEP_TEMP>
+          <STEP_TIME>25</STEP_TIME>
+        </MASH_STEP>
+        <MASH_STEP>
+          <NAME>Mashout</NAME>
+          <VERSION>1</VERSION>
+          <TYPE>Temperature</TYPE>
+          <STEP_TEMP>78.0</STEP_TEMP>
+          <STEP_TIME>10</STEP_TIME>
+        </MASH_STEP>
+      </MASH_STEPS>
+    </MASH>
+  </RECIPE>
+</RECIPES>

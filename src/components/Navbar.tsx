@@ -90,7 +90,7 @@ export const Navbar: React.FC<Props> = ({
   return (
     <>
       {/* Верхний хедер */}
-      <header className="no-print sticky top-0 z-30 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-b border-stone-200 dark:border-stone-800 transition-colors">
+      <header className="no-print sticky top-0 z-30 w-full max-w-full bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-b border-stone-200 dark:border-stone-800 transition-colors pt-[env(safe-area-inset-top,0px)] pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)]">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 sm:h-16 gap-3">
             {/* Logo & Brand */}
@@ -253,59 +253,59 @@ export const Navbar: React.FC<Props> = ({
       </header>
 
       {/* Мобильная нижняя навигационная панель */}
-      <div className="no-print sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 px-2 py-1 flex justify-around items-center shadow-lg pb-[max(0.375rem,env(safe-area-inset-bottom))]">
+      <div className="no-print sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 px-1 pt-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)] flex justify-around items-center shadow-lg select-none">
         <button
           type="button"
           onClick={() => setActiveTab('calculator')}
-          className={`flex flex-col items-center gap-0.5 p-1 rounded-xl transition-colors cursor-pointer ${
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition-all cursor-pointer min-w-[56px] active:scale-95 ${
             activeTab === 'calculator'
-              ? 'text-amber-600 dark:text-amber-400 font-bold'
+              ? 'text-amber-600 dark:text-amber-400 font-extrabold'
               : 'text-stone-500 dark:text-stone-400'
           }`}
         >
           <Calculator className="w-5 h-5" />
-          <span className="text-[10px]">Варка</span>
+          <span className="text-[10px] leading-tight">Варка</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('catalogue')}
-          className={`flex flex-col items-center gap-0.5 p-1 rounded-xl transition-colors cursor-pointer ${
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition-all cursor-pointer min-w-[56px] active:scale-95 ${
             activeTab === 'catalogue'
-              ? 'text-amber-600 dark:text-amber-400 font-bold'
+              ? 'text-amber-600 dark:text-amber-400 font-extrabold'
               : 'text-stone-500 dark:text-stone-400'
           }`}
         >
           <BookOpen className="w-5 h-5" />
-          <span className="text-[10px]">Рецепты</span>
+          <span className="text-[10px] leading-tight">Рецепты</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('matcher')}
-          className={`flex flex-col items-center gap-0.5 p-1 rounded-xl transition-colors cursor-pointer ${
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition-all cursor-pointer min-w-[56px] active:scale-95 ${
             activeTab === 'matcher'
-              ? 'text-amber-600 dark:text-amber-400 font-bold'
+              ? 'text-amber-600 dark:text-amber-400 font-extrabold'
               : 'text-stone-500 dark:text-stone-400'
           }`}
         >
           <Search className="w-5 h-5" />
-          <span className="text-[10px]">Остатки</span>
+          <span className="text-[10px] leading-tight">Остатки</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('calendar')}
-          className={`flex flex-col items-center gap-0.5 p-1 rounded-xl transition-colors cursor-pointer relative ${
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition-all cursor-pointer min-w-[56px] relative active:scale-95 ${
             activeTab === 'calendar'
-              ? 'text-amber-600 dark:text-amber-400 font-bold'
+              ? 'text-amber-600 dark:text-amber-400 font-extrabold'
               : 'text-stone-500 dark:text-stone-400'
           }`}
         >
           <Calendar className="w-5 h-5" />
-          <span className="text-[10px]">Брожение</span>
+          <span className="text-[10px] leading-tight">Брожение</span>
           {activeBatchesCount > 0 && (
-            <span className="absolute -top-1 right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center">
+            <span className="absolute -top-0.5 right-2 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center">
               {activeBatchesCount}
             </span>
           )}
@@ -314,14 +314,14 @@ export const Navbar: React.FC<Props> = ({
         <button
           type="button"
           onClick={() => setMobileDrawerOpen(true)}
-          className={`flex flex-col items-center gap-0.5 p-1 rounded-xl transition-colors cursor-pointer ${
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition-all cursor-pointer min-w-[56px] active:scale-95 ${
             ['ai_lab', 'logs', 'lifehacks', 'community', 'install'].includes(activeTab) || mobileDrawerOpen
-              ? 'text-amber-600 dark:text-amber-400 font-bold'
+              ? 'text-amber-600 dark:text-amber-400 font-extrabold'
               : 'text-stone-500 dark:text-stone-400'
           }`}
         >
           <Menu className="w-5 h-5" />
-          <span className="text-[10px]">Ещё</span>
+          <span className="text-[10px] leading-tight">Ещё</span>
         </button>
       </div>
 
@@ -335,7 +335,7 @@ export const Navbar: React.FC<Props> = ({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-stone-900 rounded-t-3xl p-5 border-t border-stone-200 dark:border-stone-800 space-y-4 max-h-[85dvh] overflow-y-auto shadow-2xl relative"
+            className="bg-white dark:bg-stone-900 rounded-t-3xl p-5 border-t border-stone-200 dark:border-stone-800 space-y-4 max-h-[85dvh] overflow-y-auto shadow-2xl relative pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]"
           >
             <div className="flex justify-between items-center border-b border-stone-100 dark:border-stone-800 pb-3">
               <div className="flex items-center gap-2">

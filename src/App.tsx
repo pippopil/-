@@ -531,6 +531,22 @@ export default function App() {
     if (data.lifehacks && Array.isArray(data.lifehacks)) setLifehacks(data.lifehacks);
   };
 
+  const handleAddRecipeToList = (recipe: Recipe, openInCalculator?: boolean) => {
+    setRecipes(prev => {
+      const idx = prev.findIndex(r => r.id === recipe.id);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = recipe;
+        return copy;
+      }
+      return [recipe, ...prev];
+    });
+    if (openInCalculator) {
+      setCurrentRecipe(recipe);
+      setActiveTab('calculator');
+    }
+  };
+
   const activeBatchesCount = batches.filter(b => !b.isFinished).length;
 
   return (
@@ -552,7 +568,7 @@ export default function App() {
       />
 
       {/* Основной контент */}
-      <main className="no-print max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-24 sm:pb-8">
+      <main className="no-print w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] sm:pb-10 pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))]">
         {/* Мобильный баннер установки приложения на телефон */}
         {showMobileInstallBanner && activeTab !== 'install' && (
           <div
@@ -632,6 +648,7 @@ export default function App() {
             recipes={recipes}
             onSelectRecipe={handleSelectRecipe}
             onCreateNewRecipe={handleCreateNewRecipe}
+            onAddRecipeToList={handleAddRecipeToList}
             onToggleFavorite={handleToggleFavorite}
             onSetCollection={handleSetCollection}
             onDeleteRecipe={handleDeleteRecipe}
