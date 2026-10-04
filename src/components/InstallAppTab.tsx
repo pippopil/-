@@ -463,13 +463,28 @@ export const InstallAppTab: React.FC<Props> = ({ onBackToRecipe }) => {
                     Авто-сборка APK на GitHub
                   </h3>
                   <p className="text-xs text-stone-600 dark:text-stone-300 leading-relaxed">
-                    Вам не нужно устанавливать тяжелый Android Studio. Пайплайн <code>.github/workflows/build-apk.yml</code> уже включен в проект.
+                    Облачные серверы GitHub компилируют <code>mastervarka.apk</code> прямо в репозитории без необходимости ставить Android Studio на компьютер.
                   </p>
-                  <ol className="text-xs text-stone-600 dark:text-stone-400 list-decimal list-inside mt-3 space-y-1">
-                    <li>Сделайте <code>git push</code> на GitHub</li>
-                    <li>Откройте вкладку <b>Actions</b></li>
-                    <li>Скачайте готовый <b>app-debug.apk</b></li>
-                  </ol>
+                  <div className="mt-3 space-y-2">
+                    <a
+                      href="https://github.com/pippopil/-/actions"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-full py-2 px-3 rounded-lg bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors text-center shadow-sm"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Открыть GitHub Actions (Сборки)</span>
+                    </a>
+                    <a
+                      href="https://github.com/pippopil/-/releases/tag/v1.0.0"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-full py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors text-center shadow-sm"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Скачать готовый Релиз v1.0.0</span>
+                    </a>
+                  </div>
                 </div>
                 <div className="mt-4 pt-3 border-t border-amber-200/60 dark:border-stone-700 text-[11px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5" />
