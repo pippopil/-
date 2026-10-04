@@ -528,6 +528,7 @@ export function convertOnlineItemToRecipe(item: OnlineRecipeItem): Recipe {
     tags: item.tags,
     isCustom: true,
     collection: 'my_recipes',
-    favorite: false
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   };
 }

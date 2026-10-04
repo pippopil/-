@@ -195,7 +195,10 @@ export const OnlineRecipeHubModal: React.FC<Props> = ({
             },
             tags: ['Интернет-импорт', 'JSON'],
             isCustom: true,
-            collection: 'my_recipes'
+            collection: 'my_recipes',
+            author: recipeData.author || 'Интернет-ресурс',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
           };
           setUrlSuccessRecipe(imported);
           setIsLoadingUrl(false);
