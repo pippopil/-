@@ -73,6 +73,7 @@ export default function App() {
 
   // Баннер установки PWA для мобильных
   const [showMobileInstallBanner, setShowMobileInstallBanner] = useState<boolean>(() => {
+    if (localStorage.getItem('masterbrew_dismiss_install_banner') === 'true') return false;
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as unknown as { standalone?: boolean }).standalone === true;
@@ -553,12 +554,12 @@ export default function App() {
       {/* Основной контент */}
       <main className="no-print max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-24 sm:pb-8">
         {/* Мобильный баннер установки приложения на телефон */}
-        {showMobileInstallBanner && (
+        {showMobileInstallBanner && activeTab !== 'install' && (
           <div
             role="button"
             tabIndex={0}
             onClick={() => setActiveTab('install')}
-            className="sm:hidden mb-4 p-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-amber-500 hover:from-amber-600 hover:to-amber-700 text-white shadow-md shadow-amber-500/20 flex items-center justify-between gap-2.5 animate-in fade-in duration-150 cursor-pointer active:scale-98 transition-all select-none"
+            className="sm:hidden mb-4 p-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white shadow-sm flex items-center justify-between gap-2.5 animate-in fade-in duration-150 cursor-pointer active:scale-98 transition-all select-none"
           >
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-9 h-9 rounded-xl bg-white/20 text-white flex items-center justify-center shrink-0">
@@ -589,6 +590,7 @@ export default function App() {
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowMobileInstallBanner(false);
+                  localStorage.setItem('masterbrew_dismiss_install_banner', 'true');
                 }}
                 className="p-1 rounded-lg text-white/80 hover:text-white cursor-pointer"
                 title="Скрыть баннер"

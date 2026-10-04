@@ -307,19 +307,19 @@ export const RecipeBuilder: React.FC<Props> = ({
     <div className="space-y-6 pb-12">
       {/* Верхняя карточка с базовыми параметрами и действиями */}
       <div className="bg-white dark:bg-stone-900 rounded-2xl p-5 sm:p-6 shadow-sm border border-stone-200/80 dark:border-stone-800">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-stone-100 dark:border-stone-800 pb-5">
-          <div className="space-y-1.5 flex-1">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-stone-200/70 dark:border-stone-800 pb-5">
+          <div className="space-y-2 flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <input
                 type="text"
                 value={recipe.name}
                 onChange={(e) => updateParams({ name: e.target.value })}
-                className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-transparent text-stone-900 dark:text-white border-b border-transparent hover:border-amber-400 focus:border-amber-500 focus:outline-none w-full"
+                className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight bg-transparent text-stone-900 dark:text-white border-b border-stone-200 dark:border-stone-700 hover:border-amber-400 focus:border-amber-500 focus:outline-none w-full py-0.5"
                 placeholder="Название рецепта..."
               />
             </div>
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="text-stone-500 dark:text-stone-400">Стиль BJCP:</span>
+              <span className="text-stone-500 dark:text-stone-400 font-medium">Стиль BJCP:</span>
               <select
                 value={recipe.style}
                 onChange={(e) => {
@@ -329,7 +329,7 @@ export const RecipeBuilder: React.FC<Props> = ({
                     category: s ? s.category : recipe.category
                   });
                 }}
-                className="bg-amber-50 dark:bg-stone-800 text-amber-900 dark:text-amber-300 font-semibold px-2.5 py-1 rounded-md border border-amber-200 dark:border-stone-700 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                className="bg-amber-50 dark:bg-stone-800 text-amber-900 dark:text-amber-300 font-bold px-2.5 py-1 rounded-lg border border-amber-200 dark:border-stone-700 focus:outline-none focus:ring-1 focus:ring-amber-500 text-xs"
               >
                 {BJCP_STYLES.map(s => (
                   <option key={s.id} value={s.name}>
@@ -341,26 +341,29 @@ export const RecipeBuilder: React.FC<Props> = ({
           </div>
 
           {/* Панель быстрых действий */}
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <button
+              type="button"
               onClick={handleSave}
-              className="px-3 py-2 rounded-xl bg-stone-900 hover:bg-stone-800 dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-stone-900 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+              className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 text-xs font-black flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
             >
               <Save className="w-4 h-4" />
               <span>Сохранить</span>
             </button>
 
             <button
+              type="button"
               onClick={() => onStartBrewBatch(recipe)}
-              className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
             >
               <Calendar className="w-4 h-4" />
               <span>Варка в календарь</span>
             </button>
 
             <button
+              type="button"
               onClick={() => setScaleModalOpen(true)}
-              className="px-3 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               title="Пересчитать ингредиенты под другой объем варки"
             >
               <Scale className="w-4 h-4 text-amber-600 dark:text-amber-400" />
@@ -368,20 +371,22 @@ export const RecipeBuilder: React.FC<Props> = ({
             </button>
 
             <button
+              type="button"
               onClick={() => onSendToAiStudio(recipe)}
-              className="px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs shadow-amber-500/20 transition-all cursor-pointer"
+              className="px-3 py-2 rounded-xl bg-stone-100 hover:bg-amber-100/70 dark:bg-stone-800 dark:hover:bg-stone-700 border border-stone-200 dark:border-stone-700 text-stone-800 dark:text-stone-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
             >
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               <span>ИИ Этикетка</span>
             </button>
 
             <button
+              type="button"
               onClick={onPrintSheet}
-              className="col-span-2 sm:col-span-1 p-2 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 transition-colors flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer"
-              title="Печать варочного листа"
+              className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 transition-colors flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer"
+              title="Печать варочного листа (PDF)"
             >
               <Printer className="w-4 h-4" />
-              <span className="sm:hidden">Печать листа (PDF)</span>
+              <span className="hidden sm:inline text-xs font-bold">PDF</span>
             </button>
           </div>
         </div>
@@ -655,62 +660,58 @@ export const RecipeBuilder: React.FC<Props> = ({
 
           <div className="flex flex-wrap items-center gap-2">
             <button
+              type="button"
               onClick={handleApplyAllKurskSubstitutes}
-              className="px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 text-xs font-bold flex items-center gap-1.5 transition-colors"
+              className="px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
               title="Заменить все импортные солода в рецепте на проверенные аналоги Курского солода"
             >
-              <span>🇷🇺 Все на Курский солод</span>
+              <span>🇷🇺 Все на Курский</span>
             </button>
 
+            <select
+              onChange={(e) => {
+                if (e.target.value === '__CUSTOM__') {
+                  addGrain();
+                } else {
+                  const foundKursk = KURSK_MALT_PRODUCTS.find(g => g.name === e.target.value);
+                  if (foundKursk) {
+                    addGrain(foundKursk);
+                  } else {
+                    const foundCommon = COMMON_GRAINS.find(g => g.name === e.target.value);
+                    if (foundCommon) addGrain(foundCommon);
+                  }
+                }
+                e.target.value = '';
+              }}
+              defaultValue=""
+              className="bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-750 text-stone-900 dark:text-stone-100 text-xs font-bold px-3 py-1.5 rounded-lg border border-stone-300 dark:border-stone-700 focus:outline-none cursor-pointer"
+            >
+              <option value="" disabled>+ Добавить солод в засыпь...</option>
+              <option value="__CUSTOM__">✍️ + Создать свой солод</option>
+              <optgroup label="🌾 Курский солод (22 сорта)">
+                {KURSK_MALT_PRODUCTS.map(g => (
+                  <option key={`kursk_${g.name}`} value={g.name}>
+                    {g.name} ({g.colorEbc} EBC)
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="🌍 Импортный солод">
+                {COMMON_GRAINS.map(g => (
+                  <option key={`common_${g.name}`} value={g.name}>
+                    {g.name} ({g.colorEbc} EBC)
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+
             <button
+              type="button"
               onClick={() => { setGuideActiveTab('kursk'); setSubstitutionsGuideOpen(true); }}
-              className="px-2.5 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 text-xs font-semibold flex items-center gap-1"
+              className="px-2.5 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 border border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 text-xs font-semibold flex items-center gap-1 cursor-pointer"
               title="Таблица соответствия импортных солодов и Курского солода"
             >
               <BookOpen className="w-3.5 h-3.5 text-amber-600" />
-              <span className="hidden md:inline">Справочник замен</span>
-            </button>
-
-            <select
-              onChange={(e) => {
-                const foundKursk = KURSK_MALT_PRODUCTS.find(g => g.name === e.target.value);
-                if (foundKursk) addGrain(foundKursk);
-                e.target.value = '';
-              }}
-              defaultValue=""
-              className="bg-amber-100/90 dark:bg-amber-950/70 text-amber-950 dark:text-amber-200 text-xs font-bold px-2.5 py-1.5 rounded-lg border border-amber-300 dark:border-amber-700 focus:outline-none"
-            >
-              <option value="" disabled>🌾 + Курский солод (22 сорта)...</option>
-              {KURSK_MALT_PRODUCTS.map(g => (
-                <option key={g.name} value={g.name}>
-                  {g.name} ({g.colorEbc} EBC)
-                </option>
-              ))}
-            </select>
-
-            <select
-              onChange={(e) => {
-                const found = COMMON_GRAINS.find(g => g.name === e.target.value);
-                if (found) addGrain(found);
-                e.target.value = '';
-              }}
-              defaultValue=""
-              className="bg-amber-50 dark:bg-stone-800 text-amber-900 dark:text-amber-300 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-stone-700 focus:outline-none"
-            >
-              <option value="" disabled>+ Импортный солод...</option>
-              {COMMON_GRAINS.map(g => (
-                <option key={g.name} value={g.name}>
-                  {g.name} ({g.colorEbc} EBC)
-                </option>
-              ))}
-            </select>
-
-            <button
-              onClick={() => addGrain()}
-              className="px-2.5 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 text-xs font-semibold flex items-center gap-1"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Свой солод</span>
+              <span>Справочник</span>
             </button>
           </div>
         </div>
@@ -742,8 +743,8 @@ export const RecipeBuilder: React.FC<Props> = ({
         </div>
 
         {/* Таблица солодов */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+        <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
+          <table className="w-full text-left text-xs min-w-[640px]">
             <thead>
               <tr className="border-b border-stone-200 dark:border-stone-800 text-stone-500 dark:text-stone-400">
                 <th className="py-2 px-1">Название и аналог</th>
@@ -1049,45 +1050,45 @@ export const RecipeBuilder: React.FC<Props> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => { setGuideActiveTab('hops'); setSubstitutionsGuideOpen(true); }}
-              className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-900 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 text-xs font-bold flex items-center gap-1.5 transition-colors"
-              title="Таблица взаимозаменяемости хмелей"
-            >
-              <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Таблица замен хмеля</span>
-            </button>
-
             <select
               onChange={(e) => {
-                const found = COMMON_HOPS.find(h => h.name === e.target.value);
-                if (found) addHop(found);
+                if (e.target.value === '__CUSTOM__') {
+                  addHop();
+                } else {
+                  const found = COMMON_HOPS.find(h => h.name === e.target.value);
+                  if (found) addHop(found);
+                }
                 e.target.value = '';
               }}
               defaultValue=""
-              className="bg-amber-50 dark:bg-stone-800 text-amber-900 dark:text-amber-300 text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-stone-700 focus:outline-none"
+              className="bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-750 text-stone-900 dark:text-stone-100 text-xs font-bold px-3 py-1.5 rounded-lg border border-stone-300 dark:border-stone-700 focus:outline-none cursor-pointer"
             >
-              <option value="" disabled>+ Добавить из каталога хмелей...</option>
-              {COMMON_HOPS.map(h => (
-                <option key={h.name} value={h.name}>
-                  {h.name} ({h.alphaAcid}% AA)
-                </option>
-              ))}
+              <option value="" disabled>+ Добавить хмель...</option>
+              <option value="__CUSTOM__">✍️ + Создать свой хмель</option>
+              <optgroup label="Каталог сортов хмеля">
+                {COMMON_HOPS.map(h => (
+                  <option key={h.name} value={h.name}>
+                    {h.name} ({h.alphaAcid}% AA)
+                  </option>
+                ))}
+              </optgroup>
             </select>
 
             <button
-              onClick={() => addHop()}
-              className="px-2.5 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 text-xs font-semibold flex items-center gap-1"
+              type="button"
+              onClick={() => { setGuideActiveTab('hops'); setSubstitutionsGuideOpen(true); }}
+              className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-900 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Таблица взаимозаменяемости хмелей"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Свой хмель</span>
+              <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Таблица замен</span>
             </button>
           </div>
         </div>
 
         {/* Таблица хмелей */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+        <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
+          <table className="w-full text-left text-xs min-w-[700px]">
             <thead>
               <tr className="border-b border-stone-200 dark:border-stone-800 text-stone-500 dark:text-stone-400">
                 <th className="py-2 px-1">Хмель и альтернативы</th>
