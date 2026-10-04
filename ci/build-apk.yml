@@ -34,8 +34,8 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Установка Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Принятие лицензий Android SDK
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Синхронизация платформы Android в Capacitor
         run: |
@@ -46,7 +46,7 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon
           cd ..
           cp android/app/build/outputs/apk/debug/app-debug.apk ./mastervarka.apk
 
@@ -66,4 +66,3 @@ jobs:
           files: mastervarka.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
