@@ -32,7 +32,8 @@ export type ActiveTab =
   | 'calendar'
   | 'logs'
   | 'lifehacks'
-  | 'community';
+  | 'community'
+  | 'install';
 
 interface Props {
   activeTab: ActiveTab;
@@ -46,6 +47,7 @@ interface Props {
   activeBatchesCount: number;
   globalBatchSizeL: number;
   onSetGlobalBatchSizeL: (sizeL: number) => void;
+  onOpenInstallModal?: () => void;
 }
 
 export const Navbar: React.FC<Props> = ({
@@ -59,7 +61,8 @@ export const Navbar: React.FC<Props> = ({
   isOffline,
   activeBatchesCount,
   globalBatchSizeL,
-  onSetGlobalBatchSizeL
+  onSetGlobalBatchSizeL,
+  onOpenInstallModal
 }) => {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [installModalOpen, setInstallModalOpen] = useState(false);
@@ -77,7 +80,8 @@ export const Navbar: React.FC<Props> = ({
     },
     { id: 'logs', label: 'Журнал варок', icon: ClipboardList },
     { id: 'lifehacks', label: 'Лайфхаки', icon: Lightbulb },
-    { id: 'community', label: 'Сообщество', icon: Users }
+    { id: 'community', label: 'Сообщество', icon: Users },
+    { id: 'install', label: 'Установка на телефон', icon: Smartphone }
   ];
 
   const handleMobileTabSelect = (tab: ActiveTab) => {
@@ -126,7 +130,10 @@ export const Navbar: React.FC<Props> = ({
             {/* Action buttons */}
             <div className="flex items-center gap-1.5 sm:gap-2">
               {/* Кнопка установки PWA */}
-              <PWAInstallButton showTextOnMobile={true} />
+              <PWAInstallButton
+                onOpenInstallTab={() => setActiveTab('install')}
+                showTextOnMobile={true}
+              />
 
               {/* Offline badge */}
               <div
@@ -226,10 +233,10 @@ export const Navbar: React.FC<Props> = ({
       </header>
 
       {/* Мобильная нижняя навигационная панель (Native Mobile App Tab Bar) */}
-      <div className="no-print sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-stone-900/95 backdrop-blur border-t border-stone-200 dark:border-stone-800 px-2 py-1.5 flex justify-around items-center shadow-lg">
+      <div className="no-print sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-stone-900/95 backdrop-blur border-t border-stone-200 dark:border-stone-800 px-2 py-1.5 flex justify-around items-center shadow-lg pb-[max(0.375rem,env(safe-area-inset-bottom))]">
         <button
           onClick={() => setActiveTab('calculator')}
-          className={`flex flex-col items-center gap-0.5 p-1 rounded-xl transition-colors ${
+          className={`flex flex-col items-center gap-0.5 p-1 rounded-xl transition-colors cursor-pointer ${
             activeTab === 'calculator'
               ? 'text-amber-600 dark:text-amber-400 font-bold'
               : 'text-stone-500 dark:text-stone-400'
@@ -240,20 +247,8 @@ export const Navbar: React.FC<Props> = ({
         </button>
 
         <button
-          onClick={() => setActiveTab('matcher')}
-          className={`flex flex-col items-center gap-0.5 p-1 rounded-xl transition-colors ${
-            activeTab === 'matcher'
-              ? 'text-amber-600 dark:text-amber-400 font-bold'
-              : 'text-stone-500 dark:text-stone-400'
-          }`}
-        >
-          <Search className="w-5 h-5" />
-          <span className="text-[10px]">Остатки</span>
-        </button>
-
-        <button
           onClick={() => setActiveTab('catalogue')}
-          className={`flex flex-col items-center gap-0.5 p-1 rounded-xl transition-colors ${
+          className={`flex flex-col items-center gap-0.5 p-1 rounded-xl transition-colors cursor-pointer ${
             activeTab === 'catalogue'
               ? 'text-amber-600 dark:text-amber-400 font-bold'
               : 'text-stone-500 dark:text-stone-400'
@@ -264,32 +259,47 @@ export const Navbar: React.FC<Props> = ({
         </button>
 
         <button
-          onClick={() => setActiveTab('calendar')}
-          className={`flex flex-col items-center gap-0.5 p-1 rounded-xl transition-colors relative ${
-            activeTab === 'calendar'
+          onClick={() => setActiveTab('matcher')}
+          className={`flex flex-col items-center gap-0.5 p-1 rounded-xl transition-colors cursor-pointer ${
+            activeTab === 'matcher'
               ? 'text-amber-600 dark:text-amber-400 font-bold'
               : 'text-stone-500 dark:text-stone-400'
           }`}
         >
-          <Calendar className="w-5 h-5" />
-          <span className="text-[10px]">Календарь</span>
-          {activeBatchesCount > 0 && (
-            <span className="absolute -top-1 right-2 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center">
-              {activeBatchesCount}
-            </span>
+          <Search className="w-5 h-5" />
+          <span className="text-[10px]">Остатки</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('install')}
+          className={`flex flex-col items-center gap-0.5 p-1 rounded-xl transition-colors cursor-pointer relative ${
+            activeTab === 'install'
+              ? 'text-amber-600 dark:text-amber-400 font-bold'
+              : 'text-stone-500 dark:text-stone-400'
+          }`}
+        >
+          <Smartphone className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+          <span className="text-[10px]">Установка</span>
+          {activeTab !== 'install' && (
+            <span className="absolute -top-0.5 right-1 w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
           )}
         </button>
 
         <button
           onClick={() => setMobileDrawerOpen(true)}
-          className={`flex flex-col items-center gap-0.5 p-1 rounded-xl transition-colors ${
-            ['ai_lab', 'logs', 'lifehacks', 'community'].includes(activeTab) || mobileDrawerOpen
+          className={`flex flex-col items-center gap-0.5 p-1 rounded-xl transition-colors cursor-pointer relative ${
+            ['ai_lab', 'calendar', 'logs', 'lifehacks', 'community'].includes(activeTab) || mobileDrawerOpen
               ? 'text-amber-600 dark:text-amber-400 font-bold'
               : 'text-stone-500 dark:text-stone-400'
           }`}
         >
           <Menu className="w-5 h-5" />
           <span className="text-[10px]">Меню</span>
+          {activeBatchesCount > 0 && (
+            <span className="absolute -top-1 right-2 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center">
+              {activeBatchesCount}
+            </span>
+          )}
         </button>
       </div>
 
@@ -317,14 +327,22 @@ export const Navbar: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => setMobileDrawerOpen(false)}
-                className="p-1.5 rounded-full text-stone-400 hover:text-stone-600 dark:hover:text-stone-200"
+                className="p-1.5 rounded-full text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Блок: Установка мобильного приложения на Android / iOS */}
-            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-amber-500 text-white shadow-md shadow-amber-500/25 flex items-center justify-between gap-3">
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                setMobileDrawerOpen(false);
+                setActiveTab('install');
+              }}
+              className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-amber-500 hover:from-amber-600 hover:to-amber-700 text-white shadow-md shadow-amber-500/25 flex items-center justify-between gap-3 cursor-pointer active:scale-98 transition-all select-none"
+            >
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-xl bg-white/20 text-white flex items-center justify-center shrink-0">
                   <Smartphone className="w-5 h-5" />
@@ -335,17 +353,18 @@ export const Navbar: React.FC<Props> = ({
                     <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-white text-amber-900 font-black">PWA</span>
                   </div>
                   <p className="text-[11px] text-white/90 mt-0.5">
-                    Инструкция для Android и iPhone
+                    Открыть вкладку с инструкцией для Android и iPhone
                   </p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   setMobileDrawerOpen(false);
-                  setInstallModalOpen(true);
+                  setActiveTab('install');
                 }}
-                className="px-3.5 py-2 rounded-xl bg-white text-amber-900 font-extrabold text-xs shadow-xs shrink-0 hover:bg-amber-50 active:scale-95 transition-all"
+                className="px-3.5 py-2 rounded-xl bg-white text-amber-900 font-extrabold text-xs shadow-xs shrink-0 hover:bg-amber-50 active:scale-95 transition-all cursor-pointer"
               >
                 Открыть
               </button>
@@ -363,7 +382,7 @@ export const Navbar: React.FC<Props> = ({
                     key={v}
                     type="button"
                     onClick={() => onSetGlobalBatchSizeL(v)}
-                    className={`px-2 py-1 rounded-lg text-xs font-mono font-bold ${
+                    className={`px-2 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer ${
                       globalBatchSizeL === v
                         ? 'bg-amber-500 text-white'
                         : 'bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-300'
@@ -379,8 +398,28 @@ export const Navbar: React.FC<Props> = ({
             <div className="grid grid-cols-2 gap-2 text-xs font-bold">
               <button
                 type="button"
+                onClick={() => handleMobileTabSelect('calendar')}
+                className={`p-3 rounded-2xl border flex items-center justify-between transition-colors cursor-pointer ${
+                  activeTab === 'calendar'
+                    ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
+                    : 'bg-stone-50 dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-800 dark:text-stone-200'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                  <span>Календарь</span>
+                </div>
+                {activeBatchesCount > 0 && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px]">
+                    {activeBatchesCount}
+                  </span>
+                )}
+              </button>
+
+              <button
+                type="button"
                 onClick={() => handleMobileTabSelect('ai_lab')}
-                className={`p-3 rounded-2xl border flex items-center gap-2.5 transition-colors ${
+                className={`p-3 rounded-2xl border flex items-center gap-2.5 transition-colors cursor-pointer ${
                   activeTab === 'ai_lab'
                     ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
                     : 'bg-stone-50 dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-800 dark:text-stone-200'
@@ -393,7 +432,7 @@ export const Navbar: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => handleMobileTabSelect('logs')}
-                className={`p-3 rounded-2xl border flex items-center gap-2.5 transition-colors ${
+                className={`p-3 rounded-2xl border flex items-center gap-2.5 transition-colors cursor-pointer ${
                   activeTab === 'logs'
                     ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
                     : 'bg-stone-50 dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-800 dark:text-stone-200'
@@ -406,7 +445,7 @@ export const Navbar: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => handleMobileTabSelect('lifehacks')}
-                className={`p-3 rounded-2xl border flex items-center gap-2.5 transition-colors ${
+                className={`p-3 rounded-2xl border flex items-center gap-2.5 transition-colors cursor-pointer ${
                   activeTab === 'lifehacks'
                     ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
                     : 'bg-stone-50 dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-800 dark:text-stone-200'
@@ -419,7 +458,7 @@ export const Navbar: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => handleMobileTabSelect('community')}
-                className={`p-3 rounded-2xl border flex items-center gap-2.5 transition-colors ${
+                className={`p-3 rounded-2xl border flex items-center gap-2.5 transition-colors cursor-pointer ${
                   activeTab === 'community'
                     ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
                     : 'bg-stone-50 dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-800 dark:text-stone-200'
@@ -427,6 +466,19 @@ export const Navbar: React.FC<Props> = ({
               >
                 <Users className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                 <span>Сообщество</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleMobileTabSelect('install')}
+                className={`p-3 rounded-2xl border flex items-center gap-2.5 transition-colors cursor-pointer ${
+                  activeTab === 'install'
+                    ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
+                    : 'bg-stone-50 dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-800 dark:text-stone-200'
+                }`}
+              >
+                <Smartphone className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                <span>Установка PWA</span>
               </button>
             </div>
 
@@ -476,12 +528,14 @@ export const Navbar: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Модальное окно установки PWA приложения на телефон / ПК */}
-      <PWAInstallModal
-        isOpen={installModalOpen}
-        onClose={() => setInstallModalOpen(false)}
-        defaultPlatform="android"
-      />
+      {/* Модальное окно установки PWA приложения на телефон / ПК (если не управляется родителем) */}
+      {!onOpenInstallModal && (
+        <PWAInstallModal
+          isOpen={installModalOpen}
+          onClose={() => setInstallModalOpen(false)}
+          defaultPlatform="android"
+        />
+      )}
     </>
   );
 };

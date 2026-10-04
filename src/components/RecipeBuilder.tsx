@@ -341,46 +341,47 @@ export const RecipeBuilder: React.FC<Props> = ({
           </div>
 
           {/* Панель быстрых действий */}
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setScaleModalOpen(true)}
-              className="px-3 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 text-xs font-semibold flex items-center gap-1.5 transition-colors"
-              title="Пересчитать ингредиенты под другой объем варки"
-            >
-              <Scale className="w-4 h-4 text-amber-600" />
-              <span>Масштабировать ({recipe.batchSizeL} л)</span>
-            </button>
-
-            <button
-              onClick={() => onSendToAiStudio(recipe)}
-              className="px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-amber-500/20 transition-all"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>ИИ Название & Этикетка</span>
-            </button>
-
-            <button
-              onClick={() => onStartBrewBatch(recipe)}
-              className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
-            >
-              <Calendar className="w-4 h-4" />
-              <span>Варка в календарь</span>
-            </button>
-
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
             <button
               onClick={handleSave}
-              className="px-3 py-2 rounded-xl bg-stone-900 hover:bg-stone-800 dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-stone-900 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              className="px-3 py-2 rounded-xl bg-stone-900 hover:bg-stone-800 dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-stone-900 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
             >
               <Save className="w-4 h-4" />
               <span>Сохранить</span>
             </button>
 
             <button
+              onClick={() => onStartBrewBatch(recipe)}
+              className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+            >
+              <Calendar className="w-4 h-4" />
+              <span>Варка в календарь</span>
+            </button>
+
+            <button
+              onClick={() => setScaleModalOpen(true)}
+              className="px-3 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              title="Пересчитать ингредиенты под другой объем варки"
+            >
+              <Scale className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <span>Масштаб ({recipe.batchSizeL} л)</span>
+            </button>
+
+            <button
+              onClick={() => onSendToAiStudio(recipe)}
+              className="px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs shadow-amber-500/20 transition-all cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>ИИ Этикетка</span>
+            </button>
+
+            <button
               onClick={onPrintSheet}
-              className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 transition-colors"
+              className="col-span-2 sm:col-span-1 p-2 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 transition-colors flex items-center justify-center gap-1.5 text-xs font-semibold cursor-pointer"
               title="Печать варочного листа"
             >
               <Printer className="w-4 h-4" />
+              <span className="sm:hidden">Печать листа (PDF)</span>
             </button>
           </div>
         </div>

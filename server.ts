@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { execFile } from 'child_process';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
 
@@ -10,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json({ limit: '15mb' }));
 
@@ -42,10 +43,16 @@ let communityPosts: any[] = [];
 // 1. ИИ Генератор названия, истории и концепта этикетки
 app.post('/api/ai/generate-name-and-label', async (req, res) => {
   try {
-    const { style, og, abv, ibu, colorEbc, hops, grains, currentName } = req.body;
+    const { style, og, abv, ibu, colorEbc, hops, grains, currentName, tokenSettings } = req.body;
+    const mode = tokenSettings?.mode || 'eco';
+    const isOffline = mode === 'offline' || !aiClient;
+    const isEco = mode === 'eco';
+    const maxTokens = Math.max(120, Math.min(Number(tokenSettings?.maxOutputTokens) || (isEco ? 260 : 400), 800));
+    const disableThinking = tokenSettings?.disableThinking !== false;
+    const compressPrompt = tokenSettings?.compressPrompt !== false;
 
-    if (!aiClient) {
-      // Качественный локальный генератор при отсутствии ключа или в офлайн-режиме
+    if (isOffline || !aiClient) {
+      // Локальный генератор без вызова внешнего API (0 токенов)
       const fallbackThemes = [
         {
           names: [`Хмельной Горизонт ${style}`, `Янтарная Легенда`, `Крафтовый Прорыв`],
@@ -60,6 +67,13 @@ app.post('/api/ai/generate-name-and-label', async (req, res) => {
           story: `Авторская рецептура на стыке классических пивоваренных традиций и современного крафтового духа.`,
           themeStyle: 'vintage_monastery',
           palette: { background: '#09090b', text: '#f4f4f5', accent: '#d97706', border: '#78350f' }
+        },
+        {
+          names: [`Хмельная Волна`, `Солодовый Вектор`, `Пивной Компас`],
+          slogan: 'Честное домашнее пиво без компромиссов.',
+          story: `Создано по выверенной крафтовой рецептуре с ярким профилем и чистым вкусом.`,
+          themeStyle: 'minimal_nordic',
+          palette: { background: '#0f172a', text: '#38bdf8', accent: '#0ea5e9', border: '#0369a1' }
         }
       ];
       const pick = fallbackThemes[Math.floor(Math.random() * fallbackThemes.length)];
@@ -70,48 +84,60 @@ app.post('/api/ai/generate-name-and-label', async (req, res) => {
         story: pick.story,
         themeStyle: pick.themeStyle,
         palette: pick.palette,
-        brewerTip: 'Используйте чиллер для быстрого охлаждения и следите за температурой главного брожения!'
+        brewerTip: 'Используйте чиллер для быстрого охлаждения и следите за температурой главного брожения!',
+        usage: { promptTokenCount: 0, candidatesTokenCount: 0, totalTokenCount: 0 },
+        isOfflineMode: true
       });
     }
 
-    const prompt = `Ты — креативный шеф-пивовар и дизайнер этикеток для крафтовой пивоварни.
+    const hopList = Array.isArray(hops) ? hops.map((h: any) => h.name).filter(Boolean).slice(0, 4).join(', ') : 'Крафтовые';
+    const grainList = Array.isArray(grains) ? grains.map((g: any) => g.name).filter(Boolean).slice(0, 4).join(', ') : 'Ячменные';
+
+    // Формируем сжатый или расширенный промпт в зависимости от настроек экономии
+    const prompt = compressPrompt
+      ? `Пиво: ${style}, OG:${og}, ABV:${abv}%, IBU:${ibu}, EBC:${colorEbc}. Хмель:${hopList}. Солод:${grainList}.${currentName ? ` Название:"${currentName}".` : ''}
+Ответь ТОЛЬКО валидным JSON:
+{"names":["Краткое 1","Краткое 2","Краткое 3"],"slogan":"Слоган до 6 слов","story":"Описание вкуса 1-2 предложения","themeStyle":"craft_modern"|"vintage_monastery"|"minimal_nordic"|"retro_arcade"|"botanical","palette":{"background":"#hex","text":"#hex","accent":"#hex","border":"#hex"},"artworkType":"hop"|"grain"|"barrel"|"crown"|"mountain","brewerTip":"Один краткий совет пивовара"}`
+      : `Ты — креативный шеф-пивовар и дизайнер этикеток крафтовой пивоварни.
 Параметры пива:
 - Стиль: ${style}
-- Начальная плотность: ${og}
-- Крепость: ${abv}% ABV
-- Горечь: ${ibu} IBU
-- Цвет: ${colorEbc} EBC
-- Хмели: ${Array.isArray(hops) ? hops.map((h: any) => h.name).join(', ') : 'Крафтовые'}
-- Солода: ${Array.isArray(grains) ? grains.map((g: any) => g.name).join(', ') : 'Ячменные'}
+- Начальная плотность: ${og}, Крепость: ${abv}%, Горечь: ${ibu} IBU, Цвет: ${colorEbc} EBC
+- Хмели: ${hopList}
+- Солода: ${grainList}
 ${currentName ? `- Текущее рабочее название: "${currentName}"` : ''}
 
-Сгенерируй ответ строго в формате JSON со следующими полями:
+Сгенерируй JSON со следующими полями:
 {
   "names": ["Название 1", "Название 2", "Название 3"],
-  "slogan": "Короткий звучный слоган для этикетки (до 8 слов)",
-  "story": "Красивая легенда или описание вкуса для контрэтикетки (2-3 предложения на русском языке)",
+  "slogan": "Короткий звучный слоган (до 8 слов)",
+  "story": "Легенда или описание вкуса (2 предложения на русском)",
   "themeStyle": "craft_modern" | "vintage_monastery" | "minimal_nordic" | "retro_arcade" | "botanical",
-  "palette": {
-    "background": "#hex",
-    "text": "#hex",
-    "accent": "#hex",
-    "border": "#hex"
-  },
+  "palette": { "background": "#hex", "text": "#hex", "accent": "#hex", "border": "#hex" },
   "artworkType": "hop" | "grain" | "barrel" | "crown" | "mountain",
-  "brewerTip": "Один ценный профессиональный совет пивовара именно для этого стиля и параметров"
+  "brewerTip": "Ценный совет пивовара для этого стиля"
 }`;
 
+    // Модель: Flash-Lite для экономного режима, Flash для сбалансированного
+    const selectedModel = isEco ? 'gemini-3.1-flash-lite' : 'gemini-3.8-flash';
+
     const response = await aiClient.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: selectedModel,
       contents: prompt,
       config: {
-        responseMimeType: 'application/json'
+        responseMimeType: 'application/json',
+        maxOutputTokens: maxTokens,
+        thinkingConfig: disableThinking ? { thinkingBudget: 0 } : undefined
       }
     });
 
     const responseText = response.text?.trim() || '{}';
     const parsed = JSON.parse(responseText);
-    res.json({ success: true, ...parsed });
+    res.json({
+      success: true,
+      ...parsed,
+      usage: response.usageMetadata,
+      modelUsed: selectedModel
+    });
   } catch (error: any) {
     console.error('Gemini error:', error);
     res.json({
@@ -122,7 +148,9 @@ ${currentName ? `- Текущее рабочее название: "${currentNam
       themeStyle: 'craft_modern',
       palette: { background: '#1c1917', text: '#fef08a', accent: '#eab308', border: '#ca8a04' },
       artworkType: 'hop',
-      brewerTip: 'Держите стабильную температуру брожения в первые 72 часа.'
+      brewerTip: 'Держите стабильную температуру брожения в первые 72 часа.',
+      usage: { promptTokenCount: 0, candidatesTokenCount: 0, totalTokenCount: 0 },
+      isFallback: true
     });
   }
 });
@@ -130,8 +158,15 @@ ${currentName ? `- Текущее рабочее название: "${currentNam
 // 2. ИИ Экспертный аудит рецепта и гастрономические пары
 app.post('/api/ai/audit-recipe', async (req, res) => {
   try {
-    const { recipe } = req.body;
-    if (!aiClient) {
+    const { recipe, tokenSettings } = req.body;
+    const mode = tokenSettings?.mode || 'eco';
+    const isOffline = mode === 'offline' || !aiClient;
+    const isEco = mode === 'eco';
+    const maxTokens = Math.max(150, Math.min(Number(tokenSettings?.maxOutputTokens) || (isEco ? 280 : 420), 800));
+    const disableThinking = tokenSettings?.disableThinking !== false;
+    const compressPrompt = tokenSettings?.compressPrompt !== false;
+
+    if (isOffline || !aiClient) {
       return res.json({
         success: true,
         audit: {
@@ -139,20 +174,29 @@ app.post('/api/ai/audit-recipe', async (req, res) => {
           strengths: ['Хорошая плотность сусла', 'Адекватный расчет нормы засева дрожжей'],
           suggestions: ['Контролируйте температуру брожения без резких перепадов'],
           foodPairings: ['Твердые сыры', 'Бургеры на гриле', 'Пряные колбаски'],
-          servingTemp: '8-10°C'
-        }
+          servingTemp: '8-10°C',
+          glassType: 'Тюльпан'
+        },
+        usage: { promptTokenCount: 0, candidatesTokenCount: 0, totalTokenCount: 0 },
+        isOfflineMode: true
       });
     }
 
-    const prompt = `Ты — международный судья BJCP (Beer Judge Certification Program) и главный технолог пивоварения.
+    const grainSummary = recipe.grains?.map((g: any) => `${g.name} ${g.weightKg}кг`).slice(0, 4).join(', ') || 'Солод';
+    const hopSummary = recipe.hops?.map((h: any) => `${h.name} ${h.weightG}г ${h.boilTimeMin}м`).slice(0, 4).join(', ') || 'Хмель';
+
+    const prompt = compressPrompt
+      ? `Аудит пива: ${recipe.name}, Стиль:${recipe.style}, OG:${recipe.calculated?.ogSg}, ABV:${recipe.calculated?.abv}%, IBU:${recipe.calculated?.ibu}, EBC:${recipe.calculated?.ebc}. Засыпь:${grainSummary}. Хмель:${hopSummary}. Дрожжи:${recipe.yeast?.name || 'Элевые'}.
+JSON:
+{"summary":"2 предложения оценки","strengths":["Плюс 1","Плюс 2"],"suggestions":["Совет по улучшению"],"foodPairings":["Блюдо 1","Блюдо 2"],"servingTemp":"8-10°C","glassType":"Бокал"}`
+      : `Ты — международный судья BJCP и главный технолог пивоварения.
 Проанализируй рецепт:
-Название: ${recipe.name}
-Стиль: ${recipe.style}
+Название: ${recipe.name}, Стиль: ${recipe.style}
 Партия: ${recipe.batchSizeL} л, Кипячение: ${recipe.boilTimeMin} мин
-Расчеты: OG ${recipe.calculated?.ogSg}, FG ${recipe.calculated?.fgSg}, ABV ${recipe.calculated?.abv}%, IBU ${recipe.calculated?.ibu}, EBC ${recipe.calculated?.ebc}, BU:GU ${recipe.calculated?.buGuRatio}
-Засыпь: ${recipe.grains?.map((g: any) => `${g.name} (${g.weightKg} кг)`).join(', ')}
-Хмели: ${recipe.hops?.map((h: any) => `${h.name} ${h.weightG}г на ${h.boilTimeMin}м (${h.use})`).join(', ')}
-Дрожжи: ${recipe.yeast?.name} (${recipe.yeast?.attenuationPercent}% аттенюация)
+OG: ${recipe.calculated?.ogSg}, ABV: ${recipe.calculated?.abv}%, IBU: ${recipe.calculated?.ibu}, EBC: ${recipe.calculated?.ebc}
+Засыпь: ${grainSummary}
+Хмели: ${hopSummary}
+Дрожжи: ${recipe.yeast?.name} (${recipe.yeast?.attenuationPercent || 75}% аттенюация)
 
 Сформируй экспертное заключение в JSON:
 {
@@ -161,30 +205,41 @@ app.post('/api/ai/audit-recipe', async (req, res) => {
   "suggestions": ["Рекомендация по улучшению засыпи или охмеления"],
   "foodPairings": ["Гастрономическая пара 1", "Пара 2", "Пара 3"],
   "servingTemp": "Рекомендуемая температура подачи (напр. 7-9°C)",
-  "glassType": "Рекомендуемый бокал (напр. Тюльпан, Пинта Nonic, Снифтер, Кружка)"
+  "glassType": "Рекомендуемый бокал (напр. Тюльпан, Пинта Nonic, Снифтер)"
 }`;
 
+    const selectedModel = isEco ? 'gemini-3.1-flash-lite' : 'gemini-3.8-flash';
+
     const response = await aiClient.models.generateContent({
-      model: 'gemini-3.8-flash',
+      model: selectedModel,
       contents: prompt,
       config: {
-        responseMimeType: 'application/json'
+        responseMimeType: 'application/json',
+        maxOutputTokens: maxTokens,
+        thinkingConfig: disableThinking ? { thinkingBudget: 0 } : undefined
       }
     });
 
     const parsed = JSON.parse(response.text?.trim() || '{}');
-    res.json({ success: true, audit: parsed });
+    res.json({
+      success: true,
+      audit: parsed,
+      usage: response.usageMetadata,
+      modelUsed: selectedModel
+    });
   } catch (err: any) {
     res.json({
       success: true,
       audit: {
-        summary: 'Рецепт выглядит сбалансированным и готовым к варке.',
-        strengths: ['Классическая засыпь', 'Надежные дрожжи'],
-        suggestions: ['Не забывайте про аэрацию сусла перед внесением дрожжей'],
-        foodPairings: ['Крафтовые бургеры', 'Выдержанный сыр Чеддер'],
+        summary: 'Рецепт составлен гармонично и готов к варке.',
+        strengths: ['Баланс засыпи и охмеления'],
+        suggestions: ['Аэрируйте сусло перед внесением дрожжей'],
+        foodPairings: ['Твердые сыры', 'Мясные закуски'],
         servingTemp: '8-10°C',
-        glassType: 'Пинта Nonic'
-      }
+        glassType: 'Тюльпан'
+      },
+      usage: { promptTokenCount: 0, candidatesTokenCount: 0, totalTokenCount: 0 },
+      isFallback: true
     });
   }
 });
@@ -227,6 +282,24 @@ app.post('/api/community/posts', (req, res) => {
   };
   communityPosts.unshift(newPost);
   res.json({ success: true, post: newPost });
+});
+
+// 5. Скачивание архива с исходным кодом проекта для GitHub и компиляции в APK
+app.get('/api/project/download-zip', (_req, res) => {
+  const outputPath = '/tmp/mastervarka-source.zip';
+  const scriptPath = path.resolve(__dirname, 'scripts', 'export_zip.py');
+
+  execFile('python3', [scriptPath, outputPath], (error) => {
+    if (error) {
+      console.error('Failed to create project zip:', error);
+      return res.status(500).json({ error: 'Failed to create zip archive' });
+    }
+    res.download(outputPath, 'mastervarka-source.zip', (err) => {
+      if (err) {
+        console.error('Error sending zip file:', err);
+      }
+    });
+  });
 });
 
 // ======================== DEV & PROD SERVING ========================

@@ -5,35 +5,51 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 }
 
+const checkIsIOS = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const ua = (window.navigator?.userAgent || '').toLowerCase();
+  return /iphone|ipad|ipod/.test(ua) || (window.navigator?.platform === 'MacIntel' && (window.navigator?.maxTouchPoints || 0) > 1);
+};
+
+const checkIsAndroid = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const ua = (window.navigator?.userAgent || '').toLowerCase();
+  return /android/.test(ua);
+};
+
+const checkIsStandalone = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as unknown as { standalone?: boolean }).standalone === true
+  );
+};
+
 export function usePWAInstall() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
-  const [isAndroid, setIsAndroid] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(() => {
+    // Check if globally captured earlier
+    return (window as unknown as { __pwaPromptEvent?: BeforeInstallPromptEvent }).__pwaPromptEvent || null;
+  });
+  const [isInstalled, setIsInstalled] = useState<boolean>(checkIsStandalone);
+  const [isIOS, setIsIOS] = useState<boolean>(checkIsIOS);
+  const [isAndroid, setIsAndroid] = useState<boolean>(checkIsAndroid);
 
   useEffect(() => {
-    // Detect standalone mode (already installed)
-    const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as unknown as { standalone?: boolean }).standalone === true;
-    setIsInstalled(isStandalone);
-
-    // Detect device platform
-    const userAgent = (window.navigator.userAgent || '').toLowerCase();
-    const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
-    const isAndroidDevice = /android/.test(userAgent);
-
-    setIsIOS(isIOSDevice);
-    setIsAndroid(isAndroidDevice);
+    setIsInstalled(checkIsStandalone());
+    setIsIOS(checkIsIOS());
+    setIsAndroid(checkIsAndroid());
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      const promptEvent = e as BeforeInstallPromptEvent;
+      (window as unknown as { __pwaPromptEvent?: BeforeInstallPromptEvent }).__pwaPromptEvent = promptEvent;
+      setDeferredPrompt(promptEvent);
     };
 
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setDeferredPrompt(null);
+      (window as unknown as { __pwaPromptEvent?: BeforeInstallPromptEvent }).__pwaPromptEvent = undefined;
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -46,13 +62,17 @@ export function usePWAInstall() {
   }, []);
 
   const install = async (): Promise<boolean> => {
-    if (!deferredPrompt) return false;
+    const prompt = deferredPrompt || (window as unknown as { __pwaPromptEvent?: BeforeInstallPromptEvent }).__pwaPromptEvent;
+    if (!prompt) {
+      return false;
+    }
     try {
-      await deferredPrompt.prompt();
-      const choice = await deferredPrompt.userChoice;
+      await prompt.prompt();
+      const choice = await prompt.userChoice;
       if (choice && choice.outcome === 'accepted') {
         setIsInstalled(true);
         setDeferredPrompt(null);
+        (window as unknown as { __pwaPromptEvent?: BeforeInstallPromptEvent }).__pwaPromptEvent = undefined;
         return true;
       }
     } catch (err) {

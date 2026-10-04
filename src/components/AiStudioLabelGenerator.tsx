@@ -2,6 +2,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import { LabelDesign, Recipe } from '../types/brewing';
 import { ebcToHex } from '../utils/brewingMath';
 import {
+  TokenSavingSettings,
+  TokenUsageStats,
+  DEFAULT_TOKEN_SAVING_SETTINGS
+} from '../types/aiSettings';
+import {
+  loadTokenSettings,
+  saveTokenSettings,
+  loadTokenStats,
+  recordTokenUsage,
+  getAiCache,
+  setAiCache
+} from '../utils/aiTokenManager';
+import { AiTokenSettingsModal } from './AiTokenSettingsModal';
+import {
   Sparkles,
   Download,
   Check,
@@ -12,7 +26,11 @@ import {
   Award,
   Utensils,
   Thermometer,
-  GlassWater
+  GlassWater,
+  Sliders,
+  Zap,
+  TrendingDown,
+  Database
 } from 'lucide-react';
 
 interface Props {
@@ -29,6 +47,17 @@ export const AiStudioLabelGenerator: React.FC<Props> = ({ recipe, onUpdateRecipe
   const [aiStory, setAiStory] = useState<string>('');
   const [aiTip, setAiTip] = useState<string>('');
   const [aiAudit, setAiAudit] = useState<any>(null);
+
+  // Настройки расхода токенов и статистика
+  const [tokenSettings, setTokenSettings] = useState<TokenSavingSettings>(loadTokenSettings);
+  const [tokenStats, setTokenStats] = useState<TokenUsageStats>(loadTokenStats);
+  const [isTokenSettingsOpen, setIsTokenSettingsOpen] = useState(false);
+  const [isCachedResult, setIsCachedResult] = useState(false);
+
+  const updateTokenSettings = (newSettings: TokenSavingSettings) => {
+    setTokenSettings(newSettings);
+    saveTokenSettings(newSettings);
+  };
 
   // Локальное состояние дизайна этикетки
   const [labelState, setLabelState] = useState<LabelDesign>(() => {
@@ -55,11 +84,44 @@ export const AiStudioLabelGenerator: React.FC<Props> = ({ recipe, onUpdateRecipe
     );
   });
 
-  // Запуск ИИ генерации
-  const handleGenerateWithAi = async () => {
+  // Запуск ИИ генерации с учетом настроек экономии токенов и кэша
+  const handleGenerateWithAi = async (forceNoCache = false) => {
     setIsLoading(true);
+    setIsCachedResult(false);
     try {
-      // 1. Генерация названий и стиля
+      const cacheKey = `ai_gen_${recipe.style}_${recipe.calculated.ogSg}_${recipe.calculated.abv}_${recipe.calculated.ibu}_${recipe.name}_${tokenSettings.mode}_${tokenSettings.maxOutputTokens}`;
+
+      // Если включено кэширование и ответ уже есть в кэше:
+      if (!forceNoCache && tokenSettings.cacheResponses) {
+        const cached = getAiCache<{ labelData: any; auditData: any }>(cacheKey);
+        if (cached) {
+          if (cached.labelData?.names?.length) {
+            setAiNames(cached.labelData.names);
+            setAiSlogan(cached.labelData.slogan || '');
+            setAiStory(cached.labelData.story || '');
+            setAiTip(cached.labelData.brewerTip || '');
+            setLabelState(prev => ({
+              ...prev,
+              title: cached.labelData.names[0],
+              subtitle: cached.labelData.slogan || prev.subtitle,
+              themeStyle: cached.labelData.themeStyle || prev.themeStyle,
+              palette: cached.labelData.palette || prev.palette,
+              artworkType: cached.labelData.artworkType || prev.artworkType,
+              storyDescription: cached.labelData.story || prev.storyDescription
+            }));
+          }
+          if (cached.auditData) {
+            setAiAudit(cached.auditData);
+          }
+          setIsCachedResult(true);
+          const updatedStats = recordTokenUsage(undefined, tokenSettings.mode, true);
+          setTokenStats(updatedStats);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // 1. Генерация названий и стиля с передачей настроек токенов
       const res = await fetch('/api/ai/generate-name-and-label', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -71,7 +133,8 @@ export const AiStudioLabelGenerator: React.FC<Props> = ({ recipe, onUpdateRecipe
           colorEbc: recipe.calculated.ebc,
           hops: recipe.hops,
           grains: recipe.grains,
-          currentName: recipe.name
+          currentName: recipe.name,
+          tokenSettings
         })
       });
 
@@ -97,11 +160,30 @@ export const AiStudioLabelGenerator: React.FC<Props> = ({ recipe, onUpdateRecipe
       const auditRes = await fetch('/api/ai/audit-recipe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipe })
+        body: JSON.stringify({
+          recipe,
+          tokenSettings
+        })
       });
       const auditData = await auditRes.json();
       if (auditData.audit) {
         setAiAudit(auditData.audit);
+      }
+
+      // Учет токенов
+      const totalTokens = (data.usage?.totalTokenCount || 0) + (auditData.usage?.totalTokenCount || 0);
+      const combinedUsage = {
+        promptTokenCount: (data.usage?.promptTokenCount || 0) + (auditData.usage?.promptTokenCount || 0),
+        candidatesTokenCount: (data.usage?.candidatesTokenCount || 0) + (auditData.usage?.candidatesTokenCount || 0),
+        totalTokenCount: totalTokens
+      };
+
+      const updatedStats = recordTokenUsage(combinedUsage, tokenSettings.mode, false);
+      setTokenStats(updatedStats);
+
+      // Сохранение в локальный кэш
+      if (tokenSettings.cacheResponses) {
+        setAiCache(cacheKey, { labelData: data, auditData: auditData.audit });
       }
     } catch (err) {
       console.error('AI generation error:', err);
@@ -296,13 +378,91 @@ export const AiStudioLabelGenerator: React.FC<Props> = ({ recipe, onUpdateRecipe
             </p>
           </div>
 
+          <div className="flex flex-col items-start md:items-end gap-2 shrink-0">
+            <button
+              onClick={() => handleGenerateWithAi(false)}
+              disabled={isLoading}
+              className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-stone-950 font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 transition-all disabled:opacity-50 active:scale-98"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <span>{isLoading ? 'Генерация...' : 'Сгенерировать через ИИ'}</span>
+            </button>
+
+            {isCachedResult && (
+              <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1 font-bold">
+                <Database className="w-3 h-3" />
+                <span>Загружено из кэша (0 токенов)</span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Панель управления расходом токенов ИИ */}
+        <div className="mt-5 pt-4 border-t border-stone-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-stone-400 font-semibold flex items-center gap-1">
+              <Zap className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Режим экономии:</span>
+            </span>
+
+            {/* Быстрые переключатели режима */}
+            <div className="flex bg-stone-850 rounded-xl p-0.5 border border-stone-700 text-[11px] font-bold">
+              <button
+                type="button"
+                onClick={() => updateTokenSettings({ ...tokenSettings, mode: 'eco' })}
+                className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 ${
+                  tokenSettings.mode === 'eco'
+                    ? 'bg-emerald-500 text-stone-950 font-black shadow-xs'
+                    : 'text-stone-400 hover:text-stone-200'
+                }`}
+                title="Flash-Lite: экономия 85% токенов"
+              >
+                <span>⚡ Эко (-85%)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => updateTokenSettings({ ...tokenSettings, mode: 'balanced' })}
+                className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 ${
+                  tokenSettings.mode === 'balanced'
+                    ? 'bg-amber-500 text-stone-950 font-black shadow-xs'
+                    : 'text-stone-400 hover:text-stone-200'
+                }`}
+                title="Стандартный Gemini Flash"
+              >
+                <span>⚖️ Баланс</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => updateTokenSettings({ ...tokenSettings, mode: 'offline' })}
+                className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 ${
+                  tokenSettings.mode === 'offline'
+                    ? 'bg-teal-500 text-stone-950 font-black shadow-xs'
+                    : 'text-stone-400 hover:text-stone-200'
+                }`}
+                title="Офлайн: 0 токенов, генерация по шаблонам"
+              >
+                <span>🍃 0 токенов</span>
+              </button>
+            </div>
+
+            <span className="text-[11px] text-stone-400 font-mono hidden md:inline">
+              Лимит: {tokenSettings.maxOutputTokens} т.
+            </span>
+
+            <span className="text-[11px] text-emerald-400 font-mono font-bold hidden sm:inline">
+              Сэкономлено: ~{tokenStats.totalTokensSavedEstimate.toLocaleString()} т.
+            </span>
+          </div>
+
           <button
-            onClick={handleGenerateWithAi}
-            disabled={isLoading}
-            className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-stone-950 font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 transition-all self-start md:self-auto disabled:opacity-50"
+            type="button"
+            onClick={() => setIsTokenSettingsOpen(true)}
+            className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-750 text-stone-200 hover:text-white border border-stone-700 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs active:scale-95"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>{isLoading ? 'Генерация...' : 'Сгенерировать через ИИ'}</span>
+            <Sliders className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Настройки токенов</span>
           </button>
         </div>
 
@@ -594,6 +754,16 @@ export const AiStudioLabelGenerator: React.FC<Props> = ({ recipe, onUpdateRecipe
           </div>
         </div>
       </div>
+
+      {/* Модальное окно настроек экономии токенов ИИ */}
+      <AiTokenSettingsModal
+        isOpen={isTokenSettingsOpen}
+        onClose={() => setIsTokenSettingsOpen(false)}
+        settings={tokenSettings}
+        onUpdateSettings={updateTokenSettings}
+        stats={tokenStats}
+        onRefreshStats={() => setTokenStats(loadTokenStats())}
+      />
     </div>
   );
 };

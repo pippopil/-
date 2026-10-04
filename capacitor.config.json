@@ -1,0 +1,9 @@
+{
+  "appId": "com.mastervarka.app",
+  "appName": "МастерВарка",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}
