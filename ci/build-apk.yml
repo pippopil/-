@@ -14,17 +14,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Проверка репозитория
+      - name: Клонирование репозитория
         uses: actions/checkout@v4
 
-      - name: Установка Node.js
+      - name: Установка Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
 
       - name: Установка зависимостей проекта
-        run: npm ci || npm install
+        run: npm install
 
       - name: Сборка веб-приложения (Vite Build)
         run: npm run build
@@ -38,7 +37,7 @@ jobs:
       - name: Установка Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Добавление платформы Android в Capacitor
+      - name: Синхронизация платформы Android в Capacitor
         run: |
           npx cap add android || true
           npx cap sync android
@@ -51,27 +50,20 @@ jobs:
           cd ..
           cp android/app/build/outputs/apk/debug/app-debug.apk ./mastervarka.apk
 
-      - name: Выгрузка APK в артефакты сборки
+      - name: Сохранение APK в артефактах GitHub Actions
         uses: actions/upload-artifact@v4
         with:
-          name: mastervarka-apk
+          name: mastervarka-debug-apk
           path: mastervarka.apk
           if-no-files-found: error
 
-      - name: Публикация APK в GitHub Releases
+      - name: Прикрепление APK к Релизу GitHub
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
           tag_name: v1.0.0
-          name: "МастерВарка v1.0.0 — Готовый APK для Android"
-          body: |
-            ### 🍺 Официальный релиз мобильного приложения МастерВарка!
-            
-            - **Файл установки для Android:** Скачайте `mastervarka.apk` из списка прикрепленных файлов ниже.
-            - **Как установить:** Нажмите на скачанный файл `mastervarka.apk` на телефоне и подтвердите установку.
-            - **Возможности:** 34 эталонных рецепта BJCP, калькулятор засыпи и хмеля, база Курского солода, ИИ-дизайн этикеток, 100% офлайн работа.
+          name: "🍺 МастерВарка v1.0.0 — Официальный Релиз"
           files: mastervarka.apk
-          draft: false
-          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
