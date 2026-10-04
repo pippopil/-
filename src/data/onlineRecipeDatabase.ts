@@ -12,6 +12,23 @@ export interface OnlineRecipeSource {
 
 export const POPULAR_ONLINE_SOURCES: OnlineRecipeSource[] = [
   {
+    id: 'bir_rf',
+    name: 'Бир.РФ (xn--90aoy.xn--p1ai)',
+    url: 'https://xn--90aoy.xn--p1ai/beer_recipes',
+    description: 'Крупнейший российский каталог рецептов от домашних пивоваров (более 27 000 рецептов, зерновые паузы, навески солода и хмеля).',
+    format: 'web',
+    sampleUrls: [
+      {
+        title: 'Бир.РФ: RIS Catherine (Русский Имперский Стаут)',
+        url: 'https://xn--90aoy.xn--p1ai/beer_recipes/bjcp_2008/other/ris_alaska/3-1-0-68558'
+      },
+      {
+        title: 'Бир.РФ: 49er’s Hops (Американский хмельной эль)',
+        url: 'https://xn--90aoy.xn--p1ai/beer_recipes/bjcp_2008/ale/49er_s_hops/2-1-0-68056'
+      }
+    ]
+  },
+  {
     id: 'brewersfriend',
     name: "Brewer's Friend",
     url: 'https://www.brewersfriend.com/homebrew/recipes/',

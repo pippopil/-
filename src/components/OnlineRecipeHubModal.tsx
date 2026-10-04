@@ -27,6 +27,7 @@ import {
   convertOnlineItemToRecipe
 } from '../data/onlineRecipeDatabase';
 import { importFromBeerXml } from '../utils/beerXml';
+import { parseBirRfRecipe } from '../utils/birRfParser';
 import { ebcToHex } from '../utils/brewingMath';
 import { getKurskMaltSubstitute } from '../utils/brewingSubstitutions';
 
@@ -208,9 +209,27 @@ export const OnlineRecipeHubModal: React.FC<Props> = ({
         // не JSON
       }
 
+      // Попытка 3: Парсинг страниц Бир.РФ (xn--90aoy.xn--p1ai, бир.рф, беер.рф)
+      if (
+        targetUrl.includes('xn--90aoy') ||
+        targetUrl.includes('бир.рф') ||
+        targetUrl.includes('беер.рф') ||
+        content.includes('Зерновые:</i>') ||
+        content.includes('Бир.РФ') ||
+        content.includes('Параметры затирания') ||
+        content.includes('beer_recipes')
+      ) {
+        const parsedBir = parseBirRfRecipe(content, targetUrl);
+        if (parsedBir) {
+          setUrlSuccessRecipe(parsedBir);
+          setIsLoadingUrl(false);
+          return;
+        }
+      }
+
       // Если парсинг не удался напрямую
       throw new Error(
-        'Файл по ссылке был успешно загружен, но его формат не распознан как BeerXML или JSON рецепт. Убедитесь, что ссылка ведет на прямой .xml/.json файл.'
+        'Файл по ссылке был успешно загружен, но его формат не распознан. Поддерживаются ссылки на BeerXML (.xml), JSON и рецепты с Бир.РФ (xn--90aoy.xn--p1ai/beer_recipes/...).'
       );
     } catch (err: any) {
       console.error(err);
@@ -492,8 +511,7 @@ export const OnlineRecipeHubModal: React.FC<Props> = ({
                   <span>Прямая загрузка рецепта с любого сайта или ресурса</span>
                 </div>
                 <p className="text-xs text-stone-600 dark:text-stone-400">
-                  Вставьте ссылку на файл в формате <b>BeerXML (.xml, .beerxml)</b> или <b>JSON</b> с любого сайта, форума, Brewer's Friend или Brewfather.
-                  Наш сервер безопасно загрузит данные без ограничений CORS.
+                  Вставьте прямую ссылку на любой рецепт с <b>Бир.РФ (xn--90aoy.xn--p1ai / бир.рф)</b> или файл в формате <b>BeerXML (.xml)</b> / <b>JSON</b>. Наш сервер и парсер автоматически загрузят состав засыпи, хмель, паузы затирания и рассчитают варку.
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-2 pt-1">
@@ -504,7 +522,7 @@ export const OnlineRecipeHubModal: React.FC<Props> = ({
                       setInputUrl(e.target.value);
                       setUrlError(null);
                     }}
-                    placeholder="https://site.com/recipes/my-ipa.xml или .json"
+                    placeholder="https://xn--90aoy.xn--p1ai/beer_recipes/... или ссылка на .xml/.json"
                     className="flex-1 px-3.5 py-2.5 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono"
                   />
                   <button
