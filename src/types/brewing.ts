@@ -106,16 +106,17 @@ export interface LabelDesign {
   ibu: number;
   volumeText: string;
   bottledDate: string;
-  themeStyle: 'craft_modern' | 'vintage_monastery' | 'minimal_nordic' | 'retro_arcade' | 'botanical';
+  themeStyle: 'craft_modern' | 'vintage_monastery' | 'minimal_nordic' | 'retro_arcade' | 'botanical' | 'slavic_craft';
   palette: {
     background: string;
     text: string;
     accent: string;
     border: string;
   };
-  artworkType: 'hop' | 'grain' | 'barrel' | 'crown' | 'mountain' | 'custom';
+  artworkType: 'hop' | 'grain' | 'barrel' | 'crown' | 'mountain' | 'shield' | 'bear' | 'wolf' | 'kettle' | 'mug' | 'custom';
   storyDescription?: string;
   generatedImageBase64?: string;
+  customImageUrl?: string;
 }
 
 export interface Recipe {

@@ -1,11 +1,34 @@
 export type AiEconomyMode = 'eco' | 'balanced' | 'offline';
 
+export type AiProvider = 'offline' | 'deepseek' | 'custom_openai' | 'gemini';
+
 export interface TokenSavingSettings {
   /**
+   * Провайдер ИИ:
+   * 'offline': Автономный ИИ МастерВарка (100% без VPN, без интернета, 0 токенов, мгновенно)
+   * 'deepseek': DeepSeek V3 / R1 (официально работает в РФ без VPN напрямую)
+   * 'custom_openai': Пользовательский API (GigaChat / OpenRouter / Ollama / LM Studio)
+   * 'gemini': Google Gemini (через серверный прокси или с VPN)
+   */
+  provider: AiProvider;
+
+  /**
+   * Ключ API DeepSeek (работает в РФ без VPN)
+   */
+  deepseekApiKey?: string;
+
+  /**
+   * Пользовательский Endpoint (для custom_openai)
+   */
+  customEndpoint?: string;
+  customApiKey?: string;
+  customModel?: string;
+
+  /**
    * Режим экономии:
-   * 'eco': gemini-3.1-flash-lite (наименьший расход токенов и стоимости)
-   * 'balanced': gemini-3.8-flash (стандартный баланс)
-   * 'offline': 0 токенов (локальный алгоритмический генератор без API)
+   * 'eco': gemini-3.1-flash-lite / deepseek-chat
+   * 'balanced': gemini-3.8-flash / deepseek-reasoner
+   * 'offline': 0 токенов (локальный генератор)
    */
   mode: AiEconomyMode;
 
@@ -31,6 +54,7 @@ export interface TokenSavingSettings {
 }
 
 export const DEFAULT_TOKEN_SAVING_SETTINGS: TokenSavingSettings = {
+  provider: 'offline', // По умолчанию автономный ИИ — 100% гарантия работы в РФ без VPN и в Android APK!
   mode: 'eco',
   maxOutputTokens: 260,
   disableThinking: true,
