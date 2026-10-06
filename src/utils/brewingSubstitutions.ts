@@ -26,15 +26,18 @@ export interface HopAlternativeInfo {
 // Официальная линейка Курского солодовенного завода для прямого выбора
 export const KURSK_MALT_PRODUCTS = [
   { name: 'Курский Пилснер (Pilsner Malt)', colorEbc: 3.8, potentialSg: 1.037, type: 'base' as const, description: 'Светлый ячменный базовый солод с высокой осахаривающей способностью.' },
+  { name: 'Курский Премиум Пилснер (Premium Pilsner)', colorEbc: 3.4, potentialSg: 1.038, type: 'base' as const, description: 'Особо очищенный светлый солод высшего сорта с пониженным белком.' },
   { name: 'Курский Пэйл Эль (Pale Ale Malt)', colorEbc: 6.0, potentialSg: 1.038, type: 'base' as const, description: 'Универсальная основа для классических элей, дает округлый солодовый вкус.' },
   { name: 'Курский Венский (Vienna Malt)', colorEbc: 8.5, potentialSg: 1.036, type: 'base' as const, description: 'Золотисто-янтарный цвет и нотки свежеиспеченного тоста.' },
-  { name: 'Курский Мюнхенский (Munich 15-25 EBC)', colorEbc: 20.0, potentialSg: 1.036, type: 'base' as const, description: 'Глубокий зерновой аромат корки черного хлеба и бисквита.' },
-  { name: 'Курский Пшеничный (Wheat Malt)', colorEbc: 4.5, potentialSg: 1.038, type: 'wheat' as const, description: 'Дает фирменную стойкую пенную шапку и бархатистое тело.' },
-  { name: 'Курский Ржаной неферментированный', colorEbc: 8.0, potentialSg: 1.036, type: 'adjunct' as const, description: 'Пряные ржаные нотки для роггенбиров и темных сортов.' },
-  { name: 'Курский Ржаной ферментированный', colorEbc: 150.0, potentialSg: 1.030, type: 'roasted' as const, description: 'Аромат бородинского хлеба и квасного сусла.' },
+  { name: 'Курский Мюнхенский светлый (Munich Typ 1, 15 EBC)', colorEbc: 15.0, potentialSg: 1.036, type: 'base' as const, description: 'Глубокий зерновой аромат корки черного хлеба и бисквита.' },
+  { name: 'Курский Мюнхенский темный (Munich Typ 2, 25 EBC)', colorEbc: 25.0, potentialSg: 1.035, type: 'base' as const, description: 'Выраженный солодовый характер для плотных темных лагеров и боков.' },
+  { name: 'Курский Пшеничный светлый (Wheat Malt)', colorEbc: 4.5, potentialSg: 1.038, type: 'wheat' as const, description: 'Дает фирменную стойкую пенную шапку и бархатистое тело.' },
+  { name: 'Курский Пшеничный темный (Dark Wheat Malt)', colorEbc: 18.0, potentialSg: 1.037, type: 'wheat' as const, description: 'Темный пшеничный солод для дункельвайценов и пшеничных боков.' },
+  { name: 'Курский Ржаной неферментированный (светлый)', colorEbc: 8.0, potentialSg: 1.036, type: 'adjunct' as const, description: 'Пряные ржаные нотки для роггенбиров и темных сортов.' },
+  { name: 'Курский Ржаной ферментированный (темный)', colorEbc: 150.0, potentialSg: 1.030, type: 'roasted' as const, description: 'Аромат бородинского хлеба и квасного сусла.' },
   { name: 'Курский Гречишный (Buckwheat Malt)', colorEbc: 8.0, potentialSg: 1.034, type: 'adjunct' as const, description: 'Уникальный орехово-медовый оттенок гречихи.' },
   { name: 'Курский Овсяный (Oat Malt)', colorEbc: 4.0, potentialSg: 1.034, type: 'adjunct' as const, description: 'Шелковистая кремовая текстура для стаутов и NEIPA.' },
-  { name: 'Курский Карамельный 20 (Caramel 20 EBC)', colorEbc: 20.0, potentialSg: 1.033, type: 'caramel' as const, description: 'Аналог Carapils/Carafoam, для стойкости пены и полноты тела.' },
+  { name: 'Курский Десертный (Карамельный 20 EBC)', colorEbc: 20.0, potentialSg: 1.033, type: 'caramel' as const, description: 'Аналог Carapils/Carafoam, для стойкости пены и полноты тела.' },
   { name: 'Курский Карамельный 50 (Caramel 50 EBC)', colorEbc: 50.0, potentialSg: 1.034, type: 'caramel' as const, description: 'Мягкая карамельная сладость и золотистый медный блеск.' },
   { name: 'Курский Карамельный 100 (Caramel 100 EBC)', colorEbc: 100.0, potentialSg: 1.034, type: 'caramel' as const, description: 'Ириска, леденцы и сухие фрукты.' },
   { name: 'Курский Карамельный 150 (Caramel 150 EBC)', colorEbc: 150.0, potentialSg: 1.033, type: 'caramel' as const, description: 'Аналог Caramunich, богатый карамельно-бисквитный профиль.' },
@@ -42,11 +45,14 @@ export const KURSK_MALT_PRODUCTS = [
   { name: 'Курский Карамельный 250 (Caramel 250 EBC)', colorEbc: 250.0, potentialSg: 1.032, type: 'caramel' as const, description: 'Спелая слива, изюм и поджаренная карамель.' },
   { name: 'Курский Карамельный 300 (Caramel 300 EBC)', colorEbc: 300.0, potentialSg: 1.032, type: 'caramel' as const, description: 'Аналог Special B и Caraaroma, ноты инжира и чернослива.' },
   { name: 'Курский Меланоидиновый (Melanoidin 75 EBC)', colorEbc: 75.0, potentialSg: 1.035, type: 'caramel' as const, description: 'Имитация традиционного декокционного отварочного затирания.' },
+  { name: 'Курский Бисквитный (Biscuit / Amber 50 EBC)', colorEbc: 50.0, potentialSg: 1.034, type: 'caramel' as const, description: 'Интенсивный вкус поджаренного хлеба, теплого бисквита и орехов.' },
+  { name: 'Курский Шато Кристалл (Crystal 150 EBC)', colorEbc: 150.0, potentialSg: 1.033, type: 'caramel' as const, description: 'Кристаллический карамельный солод для насыщенных биттеров и элей.' },
   { name: 'Курский Кислый (Acidulated Malt)', colorEbc: 4.5, potentialSg: 1.027, type: 'acid' as const, description: 'Снижение pH затора натуральной молочной кислотой солода.' },
   { name: 'Курский Копченый (Smoked Malt)', colorEbc: 6.0, potentialSg: 1.036, type: 'base' as const, description: 'Окурен буковой щепой, идеален для раухбиров и копченых портеров.' },
   { name: 'Курский Шоколадный (Chocolate 900 EBC)', colorEbc: 900.0, potentialSg: 1.028, type: 'roasted' as const, description: 'Теплые тона горького шоколада, какао и кофейных зерен.' },
   { name: 'Курский Жженый (Roasted Barley 1100 EBC)', colorEbc: 1100.0, potentialSg: 1.025, type: 'roasted' as const, description: 'Сухая кофейная жженка и непроницаемый черный цвет для стаутов.' },
-  { name: 'Курский Черный солод (Black Malt 1200 EBC)', colorEbc: 1200.0, potentialSg: 1.025, type: 'roasted' as const, description: 'Интенсивный черный цвет с минимальной горечью.' }
+  { name: 'Курский Черный солод (Black Malt 1200 EBC)', colorEbc: 1200.0, potentialSg: 1.025, type: 'roasted' as const, description: 'Интенсивный черный цвет с минимальной горечью.' },
+  { name: 'Курский Диафарин (Энзимный ферментативный солод)', colorEbc: 3.5, potentialSg: 1.037, type: 'base' as const, description: 'Высочайшая ферментативная сила для осахаривания несоложенки.' }
 ];
 
 // 1. БАЗА ЗАМЕНЫ НА КУРСКИЙ СОЛОД

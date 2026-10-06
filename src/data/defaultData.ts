@@ -36,7 +36,37 @@ export const COMMON_GRAINS = [
   // Несоложенка и хлопья
   { name: 'Flaked Oats (Овсяные хлопья для тела/крема)', potentialSg: 1.032, colorEbc: 2.0, type: 'adjunct' as const, group: 'Хлопья' },
   { name: 'Flaked Barley (Ячменные хлопья)', potentialSg: 1.032, colorEbc: 3.5, type: 'adjunct' as const, group: 'Хлопья' },
-  { name: 'Flaked Wheat (Пшеничные хлопья для витбиров)', potentialSg: 1.035, colorEbc: 3.0, type: 'adjunct' as const, group: 'Хлопья' }
+  { name: 'Flaked Wheat (Пшеничные хлопья для витбиров)', potentialSg: 1.035, colorEbc: 3.0, type: 'adjunct' as const, group: 'Хлопья' },
+
+  // Полная линейка Курского солодовенного завода (Россия, все виды)
+  { name: 'Курский Пилснер (Pilsner Malt)', potentialSg: 1.037, colorEbc: 3.8, type: 'base' as const, group: 'Курский солод' },
+  { name: 'Курский Премиум Пилснер (Premium Pilsner)', potentialSg: 1.038, colorEbc: 3.4, type: 'base' as const, group: 'Курский солод' },
+  { name: 'Курский Пэйл Эль (Pale Ale Malt)', potentialSg: 1.038, colorEbc: 6.0, type: 'base' as const, group: 'Курский солод' },
+  { name: 'Курский Венский (Vienna Malt)', potentialSg: 1.036, colorEbc: 8.5, type: 'base' as const, group: 'Курский солод' },
+  { name: 'Курский Мюнхенский светлый (Munich Typ 1, 15 EBC)', potentialSg: 1.036, colorEbc: 15.0, type: 'base' as const, group: 'Курский солод' },
+  { name: 'Курский Мюнхенский темный (Munich Typ 2, 25 EBC)', potentialSg: 1.035, colorEbc: 25.0, type: 'base' as const, group: 'Курский солод' },
+  { name: 'Курский Пшеничный светлый (Wheat Malt)', potentialSg: 1.038, colorEbc: 4.5, type: 'wheat' as const, group: 'Курский солод' },
+  { name: 'Курский Пшеничный темный (Dark Wheat Malt)', potentialSg: 1.037, colorEbc: 18.0, type: 'wheat' as const, group: 'Курский солод' },
+  { name: 'Курский Ржаной неферментированный (светлый)', potentialSg: 1.036, colorEbc: 8.0, type: 'adjunct' as const, group: 'Курский солод' },
+  { name: 'Курский Ржаной ферментированный (темный)', potentialSg: 1.030, colorEbc: 150.0, type: 'roasted' as const, group: 'Курский солод' },
+  { name: 'Курский Гречишный (Buckwheat Malt)', potentialSg: 1.034, colorEbc: 8.0, type: 'adjunct' as const, group: 'Курский солод' },
+  { name: 'Курский Овсяный (Oat Malt)', potentialSg: 1.034, colorEbc: 4.0, type: 'adjunct' as const, group: 'Курский солод' },
+  { name: 'Курский Десертный (Карамельный 20 EBC)', potentialSg: 1.033, colorEbc: 20.0, type: 'caramel' as const, group: 'Курский солод' },
+  { name: 'Курский Карамельный 50 (Caramel 50 EBC)', potentialSg: 1.034, colorEbc: 50.0, type: 'caramel' as const, group: 'Курский солод' },
+  { name: 'Курский Карамельный 100 (Caramel 100 EBC)', potentialSg: 1.034, colorEbc: 100.0, type: 'caramel' as const, group: 'Курский солод' },
+  { name: 'Курский Карамельный 150 (Caramel 150 EBC)', potentialSg: 1.033, colorEbc: 150.0, type: 'caramel' as const, group: 'Курский солод' },
+  { name: 'Курский Карамельный 200 (Caramel 200 EBC)', potentialSg: 1.033, colorEbc: 200.0, type: 'caramel' as const, group: 'Курский солод' },
+  { name: 'Курский Карамельный 250 (Caramel 250 EBC)', potentialSg: 1.032, colorEbc: 250.0, type: 'caramel' as const, group: 'Курский солод' },
+  { name: 'Курский Карамельный 300 (Caramel 300 EBC)', potentialSg: 1.032, colorEbc: 300.0, type: 'caramel' as const, group: 'Курский солод' },
+  { name: 'Курский Меланоидиновый (Melanoidin 75 EBC)', potentialSg: 1.035, colorEbc: 75.0, type: 'caramel' as const, group: 'Курский солод' },
+  { name: 'Курский Бисквитный (Biscuit / Amber 50 EBC)', potentialSg: 1.034, colorEbc: 50.0, type: 'caramel' as const, group: 'Курский солод' },
+  { name: 'Курский Шато Кристалл (Crystal 150 EBC)', potentialSg: 1.033, colorEbc: 150.0, type: 'caramel' as const, group: 'Курский солод' },
+  { name: 'Курский Кислый (Acidulated Malt)', potentialSg: 1.027, colorEbc: 4.5, type: 'acid' as const, group: 'Курский солод' },
+  { name: 'Курский Копченый (Smoked Malt)', potentialSg: 1.036, colorEbc: 6.0, type: 'base' as const, group: 'Курский солод' },
+  { name: 'Курский Шоколадный (Chocolate 900 EBC)', potentialSg: 1.028, colorEbc: 900.0, type: 'roasted' as const, group: 'Курский солод' },
+  { name: 'Курский Жженый (Roasted Barley 1100 EBC)', potentialSg: 1.025, colorEbc: 1100.0, type: 'roasted' as const, group: 'Курский солод' },
+  { name: 'Курский Черный солод (Black Malt 1200 EBC)', potentialSg: 1.025, colorEbc: 1200.0, type: 'roasted' as const, group: 'Курский солод' },
+  { name: 'Курский Диафарин (Энзимный ферментативный солод)', potentialSg: 1.037, colorEbc: 3.5, type: 'base' as const, group: 'Курский солод' }
 ];
 
 // Полный каталог хмелей
@@ -152,6 +182,258 @@ export const COMMON_YEASTS = [
     attenuationPercent: 78,
     tempRange: [25, 40] as [number, number],
     styleDescription: 'Норвежский квейк: сбраживает сусло до 40°C за 48 часов без сивушных спиртов с апельсиновым профилем!'
+  },
+
+  // Полная линейка дрожжей Mangrove Jack's (Новая Зеландия / Великобритания)
+  {
+    name: "Mangrove Jack's M02 Cider",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'ale' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 95,
+    tempRange: [12, 28] as [number, number],
+    styleDescription: 'Специальный штамм для сидра: сохраняет свежий яблочный аромат, дает чистое сухое тело.'
+  },
+  {
+    name: "Mangrove Jack's M05 Mead",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'ale' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 95,
+    tempRange: [15, 30] as [number, number],
+    styleDescription: 'Штамм для медовухи (мида): высокая спиртоустойчивость до 18% ABV, раскрывает цветочные тона меда.'
+  },
+  {
+    name: "Mangrove Jack's M12 Kveik",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'kveik' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 80,
+    tempRange: [20, 40] as [number, number],
+    styleDescription: 'Норвежский фермерский квейк: сверхбыстрое сбраживание при высоких температурах с цитрусовым профилем.'
+  },
+  {
+    name: "Mangrove Jack's M15 Empire Ale",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'ale' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 73,
+    tempRange: [18, 22] as [number, number],
+    styleDescription: 'Насыщенный английский эль, темные мягкие стили (портеры, стауты, майлды), дает плотное солодовое тело.'
+  },
+  {
+    name: "Mangrove Jack's M20 Bavarian Wheat",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'wheat' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 73,
+    tempRange: [18, 30] as [number, number],
+    styleDescription: 'Классическое баварское пшеничное пиво (Hefeweizen, Dunkelweizen): банановые эфиры и пряная гвоздика.'
+  },
+  {
+    name: "Mangrove Jack's M21 Belgian Wit",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'wheat' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 73,
+    tempRange: [18, 25] as [number, number],
+    styleDescription: 'Бельгийский бланш / витбир: легкая пряность, фенолы и тонкая фруктовая кислинка, подчеркивает цедру и кориандр.'
+  },
+  {
+    name: "Mangrove Jack's M29 French Saison",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'belgian' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 88,
+    tempRange: [26, 32] as [number, number],
+    styleDescription: 'Французский и бельгийский сэзон: сбраживает почти в ноль (высокая аттенюация), перечный сухой пряный профиль.'
+  },
+  {
+    name: "Mangrove Jack's M31 Belgian Tripel",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'belgian' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 85,
+    tempRange: [18, 28] as [number, number],
+    styleDescription: 'Крепкие бельгийские эли (Tripel, Belgian Strong Ale): перечные и гвоздичные фенолы, фрукты, спирт до 14%.'
+  },
+  {
+    name: "Mangrove Jack's M36 Liberty Bell Ale",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'ale' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 76,
+    tempRange: [18, 23] as [number, number],
+    styleDescription: 'Универсальный британский и американский штамм: мягкие ягодные и карамельные эфиры для бледных и янтарных элей.'
+  },
+  {
+    name: "Mangrove Jack's M41 Belgian Ale",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'belgian' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 85,
+    tempRange: [18, 28] as [number, number],
+    styleDescription: 'Пряный бельгийский монастырский эль высокой сбраживаемости (Blond, Dubbel, Golden Strong).'
+  },
+  {
+    name: "Mangrove Jack's M42 New World Strong Ale",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'ale' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 80,
+    tempRange: [16, 22] as [number, number],
+    styleDescription: 'Нейтральный чистый профиль для крепких элей, DIPA, Imperial Stout, Barleywine. Быстрое сбраживание.'
+  },
+  {
+    name: "Mangrove Jack's M44 US West Coast",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'ale' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 81,
+    tempRange: [18, 23] as [number, number],
+    styleDescription: 'Золотой стандарт для крафтовых IPA и APA: ультра-чистый профиль, сухое тело, максимальное раскрытие хмеля.'
+  },
+  {
+    name: "Mangrove Jack's M47 Belgian Abbey",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'belgian' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 75,
+    tempRange: [18, 25] as [number, number],
+    styleDescription: 'Траппистские аббатские эли: умеренная сбраживаемость, ноты банана, специй, сухофруктов и инжира.'
+  },
+  {
+    name: "Mangrove Jack's M54 Californian Lager",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'lager' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 80,
+    tempRange: [18, 20] as [number, number],
+    styleDescription: 'Лагерный штамм для теплого сбраживания без холодильника (18-20°C): чистый лагерный профиль без серы.'
+  },
+  {
+    name: "Mangrove Jack's M66 Hophead Ale",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'ale' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 76,
+    tempRange: [18, 22] as [number, number],
+    styleDescription: 'Смесь дрожжей и ферментов для усиления биопревращения хмеля в сочных мутных NEIPA, Hazy DIPA.'
+  },
+  {
+    name: "Mangrove Jack's M76 Bavarian Lager",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'lager' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 78,
+    tempRange: [8, 14] as [number, number],
+    styleDescription: 'Традиционный баварский лагерный штамм: мягкий солодовый характер для хеллесов, мерцена и темных лагеров.'
+  },
+  {
+    name: "Mangrove Jack's M84 Bohemian Lager",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'lager' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 74,
+    tempRange: [10, 15] as [number, number],
+    styleDescription: 'Классический чешский лагер (Bohemian Pilsner): хрустящая чистая горечь и плотное солодовое тело.'
+  },
+  {
+    name: "Mangrove Jack's M03 Newcastle Dark Ale",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'ale' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 74,
+    tempRange: [18, 22] as [number, number],
+    styleDescription: 'Английский коричневый эль, майлд, портер. Мягкие фруктовые эфиры и округлое солодовое тело.'
+  },
+  {
+    name: "Mangrove Jack's M07 British Ale",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'ale' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 75,
+    tempRange: [18, 22] as [number, number],
+    styleDescription: 'Традиционные английские биттеры, пейл-эли и IPA с выраженным хмелевым акцентом.'
+  },
+  {
+    name: "Mangrove Jack's M10 Workhorse Beer Yeast",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'ale' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 78,
+    tempRange: [15, 28] as [number, number],
+    styleDescription: 'Универсальный и выносливый штамм с высокой температурной толерантностью для любых стилей.'
+  },
+  {
+    name: "Mangrove Jack's M24 Belgian Pale Ale",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'belgian' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 77,
+    tempRange: [18, 24] as [number, number],
+    styleDescription: 'Бельгийские светлые и янтарные эли с мягким пряным букетом гвоздики и сухофруктов.'
+  },
+  {
+    name: "Mangrove Jack's M27 Belgian Ale",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'belgian' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 89,
+    tempRange: [26, 32] as [number, number],
+    styleDescription: 'Классический бельгийский фермерский штамм высокой сбраживаемости и сухим фенольным финишем.'
+  },
+  {
+    name: "Mangrove Jack's M38 Honest Ale",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'ale' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 75,
+    tempRange: [18, 23] as [number, number],
+    styleDescription: 'Чистые британские светлые и золотистые эли с легкими эфирами груши и яблока.'
+  },
+  {
+    name: "Mangrove Jack's M45 Belgian Strong Ale",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'belgian' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 84,
+    tempRange: [18, 26] as [number, number],
+    styleDescription: 'Бельгийские темные и крепкие эли (Dubbel, Quadrupel), богатые ноты темных фруктов и карамели.'
+  },
+  {
+    name: "Mangrove Jack's M79 Burton Union",
+    lab: "Mangrove Jack's",
+    form: 'dry' as const,
+    type: 'ale' as const,
+    cellsPerGramOrVial: 20,
+    attenuationPercent: 77,
+    tempRange: [18, 23] as [number, number],
+    styleDescription: 'Легендарный бёртонский штамм: подчеркивает минеральность воды, сухость и чистую хмелевую горечь.'
   }
 ];
 

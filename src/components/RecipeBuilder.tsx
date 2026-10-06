@@ -304,7 +304,7 @@ export const RecipeBuilder: React.FC<Props> = ({
   const beerColorHex = ebcToHex(recipe.calculated.ebc);
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-6 pb-24 sm:pb-16">
       {/* Верхняя карточка с базовыми параметрами и действиями */}
       <div className="bg-white dark:bg-stone-900 rounded-2xl p-5 sm:p-6 shadow-sm border border-stone-200/80 dark:border-stone-800">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-stone-200/70 dark:border-stone-800 pb-5">
@@ -688,7 +688,7 @@ export const RecipeBuilder: React.FC<Props> = ({
             >
               <option value="" disabled>+ Добавить солод в засыпь...</option>
               <option value="__CUSTOM__">✍️ + Создать свой солод</option>
-              <optgroup label="🌾 Курский солод (22 сорта)">
+              <optgroup label="🌾 Курский солод (все виды)">
                 {KURSK_MALT_PRODUCTS.map(g => (
                   <option key={`kursk_${g.name}`} value={g.name}>
                     {g.name} ({g.colorEbc} EBC)
@@ -743,8 +743,8 @@ export const RecipeBuilder: React.FC<Props> = ({
         </div>
 
         {/* Таблица солодов */}
-        <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
-          <table className="w-full text-left text-xs min-w-[640px]">
+        <div className="w-full max-w-full overflow-x-auto rounded-xl border border-stone-200/60 dark:border-stone-800/60">
+          <table className="w-full text-left text-xs min-w-[580px]">
             <thead>
               <tr className="border-b border-stone-200 dark:border-stone-800 text-stone-500 dark:text-stone-400">
                 <th className="py-2 px-1">Название и аналог</th>
@@ -1087,8 +1087,8 @@ export const RecipeBuilder: React.FC<Props> = ({
         </div>
 
         {/* Таблица хмелей */}
-        <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
-          <table className="w-full text-left text-xs min-w-[700px]">
+        <div className="w-full max-w-full overflow-x-auto rounded-xl border border-stone-200/60 dark:border-stone-800/60">
+          <table className="w-full text-left text-xs min-w-[580px]">
             <thead>
               <tr className="border-b border-stone-200 dark:border-stone-800 text-stone-500 dark:text-stone-400">
                 <th className="py-2 px-1">Хмель и альтернативы</th>
@@ -1247,22 +1247,96 @@ export const RecipeBuilder: React.FC<Props> = ({
           </div>
 
           <div className="space-y-3">
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <select
-                value={recipe.yeast.name}
+                value={COMMON_YEASTS.some(y => y.name === recipe.yeast.name) ? recipe.yeast.name : '__CUSTOM__'}
                 onChange={(e) => {
-                  const y = COMMON_YEASTS.find(item => item.name === e.target.value);
-                  if (y) updateParams({ yeast: y });
+                  if (e.target.value === '__CUSTOM__') {
+                    updateParams({
+                      yeast: {
+                        name: 'Свои дрожжи',
+                        lab: 'Другая лаборатория',
+                        form: 'dry',
+                        type: 'ale',
+                        cellsPerGramOrVial: 20,
+                        attenuationPercent: 75,
+                        tempRange: [18, 22],
+                        styleDescription: 'Пользовательский штамм дрожжей'
+                      }
+                    });
+                  } else {
+                    const y = COMMON_YEASTS.find(item => item.name === e.target.value);
+                    if (y) updateParams({ yeast: y });
+                  }
                 }}
-                className="flex-1 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg px-3 py-2 text-xs font-semibold text-stone-900 dark:text-stone-100 focus:outline-none"
+                className="flex-1 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-lg px-3 py-2 text-xs font-semibold text-stone-900 dark:text-stone-100 focus:outline-none cursor-pointer"
               >
-                {COMMON_YEASTS.map(y => (
-                  <option key={y.name} value={y.name}>
-                    {y.name} ({y.lab}) — {y.styleDescription}
-                  </option>
-                ))}
+                <option value="__CUSTOM__">✍️ Раздел «Другое / Внести свое название дрожжей»</option>
+                <optgroup label="🇳🇿 Mangrove Jack's (Все виды)">
+                  {COMMON_YEASTS.filter(y => y.lab === "Mangrove Jack's").map(y => (
+                    <option key={y.name} value={y.name}>
+                      {y.name} — {y.styleDescription}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="🇫🇷 Fermentis (SafAle / SafLager)">
+                  {COMMON_YEASTS.filter(y => y.lab === 'Fermentis').map(y => (
+                    <option key={y.name} value={y.name}>
+                      {y.name} — {y.styleDescription}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="🇨🇦 Lallemand (LalBrew)">
+                  {COMMON_YEASTS.filter(y => y.lab === 'Lallemand').map(y => (
+                    <option key={y.name} value={y.name}>
+                      {y.name} — {y.styleDescription}
+                    </option>
+                  ))}
+                </optgroup>
               </select>
             </div>
+
+            {/* Если выбран раздел Другое / свои дрожжи */}
+            {!COMMON_YEASTS.some(y => y.name === recipe.yeast.name) && (
+              <div className="p-3 rounded-xl bg-amber-50/60 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800/60 space-y-2 animate-in fade-in duration-150">
+                <div className="text-[11px] font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                  <span>✍️ Свои дрожжи (Раздел «Другое»):</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <label className="text-[10px] text-stone-500 dark:text-stone-400 block mb-0.5">Название штамма:</label>
+                    <input
+                      type="text"
+                      value={recipe.yeast.name}
+                      onChange={(e) => updateParams({ yeast: { ...recipe.yeast, name: e.target.value } })}
+                      placeholder="Напр., Danstar Windsor"
+                      className="w-full bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg px-2 py-1 font-bold text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-stone-500 dark:text-stone-400 block mb-0.5">Производитель / Лаб:</label>
+                    <input
+                      type="text"
+                      value={recipe.yeast.lab}
+                      onChange={(e) => updateParams({ yeast: { ...recipe.yeast, lab: e.target.value } })}
+                      placeholder="Производитель"
+                      className="w-full bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg px-2 py-1 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-stone-500 dark:text-stone-400 block mb-0.5">Аттенюация (% сбраживания):</label>
+                    <input
+                      type="number"
+                      min="50"
+                      max="100"
+                      value={recipe.yeast.attenuationPercent}
+                      onChange={(e) => updateParams({ yeast: { ...recipe.yeast, attenuationPercent: parseInt(e.target.value, 10) || 75 } })}
+                      className="w-full bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-lg px-2 py-1 text-xs font-mono font-bold"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200/70 dark:border-stone-700/60">
@@ -1310,7 +1384,7 @@ export const RecipeBuilder: React.FC<Props> = ({
           </div>
 
           <div className="space-y-3">
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <div className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 text-center">
                 <span className="text-[11px] text-stone-600 dark:text-stone-300 font-semibold block">Декстроза (глюкоза)</span>
                 <span className="text-xl font-black font-mono text-amber-800 dark:text-amber-400 block my-1">

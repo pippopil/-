@@ -18,11 +18,9 @@ import {
   WifiOff,
   Menu,
   X,
-  Smartphone,
   Minus,
   Plus
 } from 'lucide-react';
-import { PWAInstallButton } from './PWAInstallButton';
 
 export type ActiveTab =
   | 'calculator'
@@ -32,8 +30,7 @@ export type ActiveTab =
   | 'calendar'
   | 'logs'
   | 'lifehacks'
-  | 'community'
-  | 'install';
+  | 'community';
 
 interface Props {
   activeTab: ActiveTab;
@@ -47,7 +44,6 @@ interface Props {
   activeBatchesCount: number;
   globalBatchSizeL: number;
   onSetGlobalBatchSizeL: (sizeL: number) => void;
-  onOpenInstallModal?: () => void;
 }
 
 export const Navbar: React.FC<Props> = ({
@@ -68,7 +64,7 @@ export const Navbar: React.FC<Props> = ({
   const navItems = [
     { id: 'calculator', label: 'Калькулятор', icon: Calculator },
     { id: 'catalogue', label: 'Рецепты (34)', icon: BookOpen },
-    { id: 'matcher', label: 'Кладовая', icon: Search },
+    { id: 'matcher', label: 'Склад', icon: Search },
     {
       id: 'calendar',
       label: 'Календарь',
@@ -78,8 +74,7 @@ export const Navbar: React.FC<Props> = ({
     { id: 'logs', label: 'Журнал варок', icon: ClipboardList },
     { id: 'ai_lab', label: 'ИИ Этикетки', icon: Sparkles },
     { id: 'lifehacks', label: 'Лайфхаки', icon: Lightbulb },
-    { id: 'community', label: 'Клуб', icon: Users },
-    { id: 'install', label: 'Установка', icon: Smartphone }
+    { id: 'community', label: 'Клуб', icon: Users }
   ];
 
   const handleMobileTabSelect = (tab: ActiveTab) => {
@@ -146,21 +141,6 @@ export const Navbar: React.FC<Props> = ({
 
             {/* Action buttons */}
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-              {/* Кнопка установки приложения */}
-              <button
-                type="button"
-                onClick={() => setActiveTab('install')}
-                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  activeTab === 'install'
-                    ? 'bg-amber-600 text-white'
-                    : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-900 dark:text-amber-300 border border-amber-300/80 dark:border-amber-700'
-                }`}
-                title="Установить приложение на телефон или скачать APK"
-              >
-                <Smartphone className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                <span className="hidden sm:inline">Установить</span>
-              </button>
-
               {/* Offline indicator */}
               <div
                 title={isOffline ? 'Работает в автономном офлайн-режиме' : 'Связь с сервером активна'}
@@ -253,76 +233,78 @@ export const Navbar: React.FC<Props> = ({
       </header>
 
       {/* Мобильная нижняя навигационная панель */}
-      <div className="no-print sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-t border-stone-200 dark:border-stone-800 px-1 pt-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] pl-[env(safe-area-inset-left,0px)] pr-[env(safe-area-inset-right,0px)] flex justify-around items-center shadow-lg select-none">
-        <button
-          type="button"
-          onClick={() => setActiveTab('calculator')}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition-all cursor-pointer min-w-[56px] active:scale-95 ${
-            activeTab === 'calculator'
-              ? 'text-amber-600 dark:text-amber-400 font-extrabold'
-              : 'text-stone-500 dark:text-stone-400'
-          }`}
-        >
-          <Calculator className="w-5 h-5" />
-          <span className="text-[10px] leading-tight">Варка</span>
-        </button>
+      <div className="no-print sm:hidden fixed bottom-0 inset-x-0 w-full max-w-full z-40 bg-white dark:bg-stone-900 border-t border-stone-200 dark:border-stone-800 pt-1.5 pb-[max(0.75rem,env(safe-area-inset-bottom,10px))] shadow-xl select-none">
+        <div className="w-full max-w-lg mx-auto grid grid-cols-5 items-center px-1 text-center">
+          <button
+            type="button"
+            onClick={() => setActiveTab('calculator')}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl transition-all cursor-pointer min-w-0 active:scale-95 ${
+              activeTab === 'calculator'
+                ? 'text-amber-600 dark:text-amber-400 font-extrabold'
+                : 'text-stone-500 dark:text-stone-400'
+            }`}
+          >
+            <Calculator className="w-5 h-5 shrink-0" />
+            <span className="text-[10px] leading-tight truncate">Варка</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('catalogue')}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition-all cursor-pointer min-w-[56px] active:scale-95 ${
-            activeTab === 'catalogue'
-              ? 'text-amber-600 dark:text-amber-400 font-extrabold'
-              : 'text-stone-500 dark:text-stone-400'
-          }`}
-        >
-          <BookOpen className="w-5 h-5" />
-          <span className="text-[10px] leading-tight">Рецепты</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('catalogue')}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl transition-all cursor-pointer min-w-0 active:scale-95 ${
+              activeTab === 'catalogue'
+                ? 'text-amber-600 dark:text-amber-400 font-extrabold'
+                : 'text-stone-500 dark:text-stone-400'
+            }`}
+          >
+            <BookOpen className="w-5 h-5 shrink-0" />
+            <span className="text-[10px] leading-tight truncate">Рецепты</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('matcher')}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition-all cursor-pointer min-w-[56px] active:scale-95 ${
-            activeTab === 'matcher'
-              ? 'text-amber-600 dark:text-amber-400 font-extrabold'
-              : 'text-stone-500 dark:text-stone-400'
-          }`}
-        >
-          <Search className="w-5 h-5" />
-          <span className="text-[10px] leading-tight">Остатки</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('matcher')}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl transition-all cursor-pointer min-w-0 active:scale-95 ${
+              activeTab === 'matcher'
+                ? 'text-amber-600 dark:text-amber-400 font-extrabold'
+                : 'text-stone-500 dark:text-stone-400'
+            }`}
+          >
+            <Search className="w-5 h-5 shrink-0" />
+            <span className="text-[10px] leading-tight truncate">Склад</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('calendar')}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition-all cursor-pointer min-w-[56px] relative active:scale-95 ${
-            activeTab === 'calendar'
-              ? 'text-amber-600 dark:text-amber-400 font-extrabold'
-              : 'text-stone-500 dark:text-stone-400'
-          }`}
-        >
-          <Calendar className="w-5 h-5" />
-          <span className="text-[10px] leading-tight">Брожение</span>
-          {activeBatchesCount > 0 && (
-            <span className="absolute -top-0.5 right-2 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center">
-              {activeBatchesCount}
-            </span>
-          )}
-        </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('calendar')}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl transition-all cursor-pointer min-w-0 relative active:scale-95 ${
+              activeTab === 'calendar'
+                ? 'text-amber-600 dark:text-amber-400 font-extrabold'
+                : 'text-stone-500 dark:text-stone-400'
+            }`}
+          >
+            <Calendar className="w-5 h-5 shrink-0" />
+            <span className="text-[10px] leading-tight truncate">Брожение</span>
+            {activeBatchesCount > 0 && (
+              <span className="absolute -top-0.5 right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center">
+                {activeBatchesCount}
+              </span>
+            )}
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setMobileDrawerOpen(true)}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2.5 rounded-xl transition-all cursor-pointer min-w-[56px] active:scale-95 ${
-            ['ai_lab', 'logs', 'lifehacks', 'community', 'install'].includes(activeTab) || mobileDrawerOpen
-              ? 'text-amber-600 dark:text-amber-400 font-extrabold'
-              : 'text-stone-500 dark:text-stone-400'
-          }`}
-        >
-          <Menu className="w-5 h-5" />
-          <span className="text-[10px] leading-tight">Ещё</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => setMobileDrawerOpen(true)}
+            className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl transition-all cursor-pointer min-w-0 active:scale-95 ${
+              ['ai_lab', 'logs', 'lifehacks', 'community'].includes(activeTab) || mobileDrawerOpen
+                ? 'text-amber-600 dark:text-amber-400 font-extrabold'
+                : 'text-stone-500 dark:text-stone-400'
+            }`}
+          >
+            <Menu className="w-5 h-5 shrink-0" />
+            <span className="text-[10px] leading-tight truncate">Ещё</span>
+          </button>
+        </div>
       </div>
 
       {/* Мобильное всплывающее меню (Drawer) */}
@@ -431,24 +413,6 @@ export const Navbar: React.FC<Props> = ({
               >
                 <Users className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                 <span>Сообщество</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleMobileTabSelect('install')}
-                className={`col-span-2 p-3 rounded-2xl border flex items-center justify-between transition-colors cursor-pointer ${
-                  activeTab === 'install'
-                    ? 'bg-amber-500 text-white border-amber-600 shadow-xs'
-                    : 'bg-amber-50/70 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 text-amber-950 dark:text-amber-200'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Smartphone className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                  <span>Установка на телефон и сборка APK</span>
-                </div>
-                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-100">
-                  Android / iOS
-                </span>
               </button>
             </div>
 

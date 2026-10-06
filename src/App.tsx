@@ -18,9 +18,6 @@ import { LifehacksGuide } from './components/LifehacksGuide';
 import { CommunityFeed } from './components/CommunityFeed';
 import { PrintableBrewSheet } from './components/PrintableBrewSheet';
 import { CloudSyncModal } from './components/CloudSyncModal';
-import { PWAInstallModal } from './components/PWAInstallModal';
-import { InstallAppTab } from './components/InstallAppTab';
-import { Smartphone, X } from 'lucide-react';
 
 import {
   BrewLog,
@@ -70,16 +67,6 @@ export default function App() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
-
-  // Баннер установки PWA для мобильных
-  const [showMobileInstallBanner, setShowMobileInstallBanner] = useState<boolean>(() => {
-    if (localStorage.getItem('masterbrew_dismiss_install_banner') === 'true') return false;
-    const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as unknown as { standalone?: boolean }).standalone === true;
-    return !isStandalone;
-  });
-  const [installModalOpen, setInstallModalOpen] = useState(false);
 
   // Активная вкладка
   const [activeTab, setActiveTab] = useState<ActiveTab>('calculator');
@@ -564,59 +551,10 @@ export default function App() {
         activeBatchesCount={activeBatchesCount}
         globalBatchSizeL={globalBatchSizeL}
         onSetGlobalBatchSizeL={setGlobalBatchSizeL}
-        onOpenInstallModal={() => setActiveTab('install')}
       />
 
       {/* Основной контент */}
-      <main className="no-print w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] sm:pb-10 pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))]">
-        {/* Мобильный баннер установки приложения на телефон */}
-        {showMobileInstallBanner && activeTab !== 'install' && (
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => setActiveTab('install')}
-            className="sm:hidden mb-4 p-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white shadow-sm flex items-center justify-between gap-2.5 animate-in fade-in duration-150 cursor-pointer active:scale-98 transition-all select-none"
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-white/20 text-white flex items-center justify-center shrink-0">
-                <Smartphone className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="font-extrabold text-xs leading-tight truncate">
-                  Установить МастерВарка на телефон
-                </div>
-                <div className="text-[10px] text-white/90 mt-0.5 truncate">
-                  Офлайн-база 34 рецептов и калькулятор
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveTab('install');
-                }}
-                className="px-3 py-1.5 rounded-xl bg-white text-amber-900 font-extrabold text-xs shadow-2xs hover:bg-amber-50 active:scale-95 transition-all cursor-pointer"
-              >
-                Установить
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowMobileInstallBanner(false);
-                  localStorage.setItem('masterbrew_dismiss_install_banner', 'true');
-                }}
-                className="p-1 rounded-lg text-white/80 hover:text-white cursor-pointer"
-                title="Скрыть баннер"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
-
+      <main className="no-print w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-36 sm:pb-16 pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))]">
         {activeTab === 'calculator' && (
           <RecipeBuilder
             recipe={currentRecipe}
@@ -705,12 +643,6 @@ export default function App() {
             onUpdatePosts={setPosts}
           />
         )}
-
-        {activeTab === 'install' && (
-          <InstallAppTab
-            onBackToRecipe={() => setActiveTab('calculator')}
-          />
-        )}
       </main>
 
       {/* Выделенный лист для печати варочного листа в PDF через браузер */}
@@ -730,12 +662,6 @@ export default function App() {
         onRestoreFullData={handleRestoreFullData}
         syncCode={syncCode}
         setSyncCode={setSyncCode}
-      />
-      {/* Модальное окно установки приложения на телефон / ПК */}
-      <PWAInstallModal
-        isOpen={installModalOpen}
-        onClose={() => setInstallModalOpen(false)}
-        defaultPlatform="android"
       />
     </div>
   );

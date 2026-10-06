@@ -70,6 +70,13 @@ export const IngredientMatcher: React.FC<Props> = ({
   const [showShoppingModal, setShowShoppingModal] = useState(false);
   const [copySuccessToast, setCopySuccessToast] = useState(false);
 
+  // Фильтры каталога
+  const [grainGroupFilter, setGrainGroupFilter] = useState<'all' | 'kursk' | 'base' | 'caramel' | 'roasted' | 'adjunct'>('all');
+  const [yeastLabFilter, setYeastLabFilter] = useState<'all' | 'mangrove' | 'fermentis' | 'lallemand' | 'custom'>('all');
+  const [customYeastName, setCustomYeastName] = useState('');
+  const [customYeastLab, setCustomYeastLab] = useState('');
+  const [customYeastAmount, setCustomYeastAmount] = useState<number>(1);
+
   // Форма ручного добавления кастомного ингредиента
   const [newInvName, setNewInvName] = useState('');
   const [newInvCategory, setNewInvCategory] = useState<'grain' | 'hop' | 'yeast' | 'misc'>('grain');
@@ -421,13 +428,13 @@ export const IngredientMatcher: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* 2. Блок «Моя кладовая» с возможностью быстрого добавления любых ингредиентов */}
+      {/* 2. Блок «Склад ингредиентов» с возможностью быстрого добавления любых ингредиентов */}
       <div className="bg-white dark:bg-stone-900 rounded-2xl p-5 sm:p-6 shadow-sm border border-stone-200/80 dark:border-stone-800 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 dark:border-stone-800 pb-4">
           <div>
             <h2 className="text-xl font-black text-stone-900 dark:text-white flex items-center gap-2">
               <Package className="w-5 h-5 text-amber-500" />
-              <span>Кладовая пивовара (В наличии: {inventory.length} поз.)</span>
+              <span>Склад ингредиентов (В наличии: {inventory.length} поз.)</span>
             </h2>
             <p className="text-xs text-stone-500">
               Добавьте имеющиеся у вас ингредиенты — алгоритм рассчитает, что можно сварить и что нужно докупить
@@ -503,10 +510,136 @@ export const IngredientMatcher: React.FC<Props> = ({
               </div>
             </div>
 
+            {/* Фильтры по группам солодов */}
+            {catalogTab === 'grain' && (
+              <div className="flex flex-wrap gap-1.5 text-[11px] pb-1 border-b border-amber-200/40 dark:border-stone-800">
+                {[
+                  { id: 'all', label: 'Все солода' },
+                  { id: 'kursk', label: '🌾 Курский солод (все виды)' },
+                  { id: 'base', label: 'Базовые' },
+                  { id: 'caramel', label: 'Карамельные' },
+                  { id: 'roasted', label: 'Жженые' },
+                  { id: 'adjunct', label: 'Хлопья / Спец.' }
+                ].map(f => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setGrainGroupFilter(f.id as any)}
+                    className={`px-2.5 py-1 rounded-lg font-semibold transition-colors cursor-pointer ${
+                      grainGroupFilter === f.id
+                        ? 'bg-amber-500 text-stone-950 font-black shadow-xs'
+                        : 'bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-100'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Фильтры и раздел "Другое" для дрожжей */}
+            {catalogTab === 'yeast' && (
+              <div className="space-y-3 pb-1 border-b border-amber-200/40 dark:border-stone-800">
+                <div className="flex flex-wrap gap-1.5 text-[11px]">
+                  {[
+                    { id: 'all', label: 'Все дрожжи' },
+                    { id: 'mangrove', label: "🇳🇿 Mangrove Jack's (все виды)" },
+                    { id: 'fermentis', label: '🇫🇷 Fermentis' },
+                    { id: 'lallemand', label: '🇨🇦 Lallemand' },
+                    { id: 'custom', label: '✍️ Другое (Внести свое название)' }
+                  ].map(f => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setYeastLabFilter(f.id as any)}
+                      className={`px-2.5 py-1 rounded-lg font-semibold transition-colors cursor-pointer ${
+                        yeastLabFilter === f.id
+                          ? 'bg-purple-600 text-white font-bold shadow-xs'
+                          : 'bg-white dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-100'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Блок ручного внесения своих дрожжей (Раздел «Другое») */}
+                {(yeastLabFilter === 'custom' || yeastLabFilter === 'all') && (
+                  <div className="p-3 rounded-2xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/80 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="font-bold text-xs text-purple-900 dark:text-purple-200 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                        <span>Раздел «Другое» — внести свое название дрожжей:</span>
+                      </div>
+                      <span className="text-[10px] text-purple-700 dark:text-purple-300 font-semibold">Любой штамм или домашняя культура</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
+                      <div className="sm:col-span-2">
+                        <input
+                          type="text"
+                          placeholder="Название дрожжей (напр., Danstar Windsor, Omega OYL-052)..."
+                          value={customYeastName}
+                          onChange={(e) => setCustomYeastName(e.target.value)}
+                          className="w-full bg-white dark:bg-stone-900 border border-purple-300 dark:border-purple-700 rounded-xl px-3 py-1.5 font-bold text-xs"
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="text"
+                          placeholder="Производитель / Лаб (опционально)"
+                          value={customYeastLab}
+                          onChange={(e) => setCustomYeastLab(e.target.value)}
+                          className="w-full bg-white dark:bg-stone-900 border border-purple-300 dark:border-purple-700 rounded-xl px-3 py-1.5 text-xs"
+                        />
+                      </div>
+                      <div className="flex gap-1">
+                        <select
+                          value={customYeastAmount}
+                          onChange={(e) => setCustomYeastAmount(Number(e.target.value))}
+                          className="w-16 bg-white dark:bg-stone-900 border border-purple-300 dark:border-purple-700 rounded-xl px-2 py-1.5 text-xs font-bold"
+                        >
+                          <option value={1}>1 шт</option>
+                          <option value={2}>2 шт</option>
+                          <option value={3}>3 шт</option>
+                          <option value={5}>5 шт</option>
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!customYeastName.trim()) return;
+                            const fullName = customYeastLab.trim() ? `${customYeastName.trim()} (${customYeastLab.trim()})` : customYeastName.trim();
+                            addCatalogItem(fullName, 'yeast', customYeastAmount, 'pack');
+                            setCustomYeastName('');
+                            setCustomYeastLab('');
+                          }}
+                          disabled={!customYeastName.trim()}
+                          className="flex-1 px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs disabled:opacity-40 transition-all cursor-pointer shadow-xs active:scale-95"
+                        >
+                          + Добавить на склад
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Список ингредиентов для быстрого добавления в 1 клик */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-64 overflow-y-auto pr-1">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-72 overflow-y-auto pr-1">
               {catalogTab === 'grain' &&
-                COMMON_GRAINS.filter(g => g.name.toLowerCase().includes(catalogSearch.toLowerCase())).map(grain => {
+                COMMON_GRAINS
+                  .filter(g => {
+                    const matchSearch = g.name.toLowerCase().includes(catalogSearch.toLowerCase());
+                    if (!matchSearch) return false;
+                    if (grainGroupFilter === 'kursk') return g.group === 'Курский солод';
+                    if (grainGroupFilter === 'base') return g.type === 'base' && g.group !== 'Курский солод';
+                    if (grainGroupFilter === 'caramel') return g.type === 'caramel';
+                    if (grainGroupFilter === 'roasted') return g.type === 'roasted';
+                    if (grainGroupFilter === 'adjunct') return g.group === 'Хлопья' || g.type === 'adjunct' || g.type === 'wheat';
+                    return true;
+                  })
+                  .map(grain => {
                   const currentAmount = getPantryAmount(grain.name);
                   const inPantry = currentAmount > 0;
                   return (
@@ -520,7 +653,7 @@ export const IngredientMatcher: React.FC<Props> = ({
                     >
                       <div>
                         <div className="flex justify-between items-start">
-                          <span className="text-[10px] text-amber-700 dark:text-amber-400 font-semibold">{grain.group}</span>
+                          <span className={`text-[10px] font-bold ${grain.group === 'Курский солод' ? 'text-amber-800 dark:text-amber-300' : 'text-stone-500'}`}>{grain.group}</span>
                           {inPantry && (
                             <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500 text-white font-mono font-bold">
                               {currentAmount} кг
@@ -538,13 +671,13 @@ export const IngredientMatcher: React.FC<Props> = ({
                       <div className="mt-2 flex items-center gap-1">
                         <button
                           onClick={() => addCatalogItem(grain.name, 'grain', 1.0, 'kg')}
-                          className="flex-1 py-1 rounded bg-amber-100 hover:bg-amber-200 dark:bg-stone-700 dark:hover:bg-stone-600 text-amber-900 dark:text-amber-300 text-[11px] font-bold transition-colors"
+                          className="flex-1 py-1 rounded bg-amber-100 hover:bg-amber-200 dark:bg-stone-700 dark:hover:bg-stone-600 text-amber-900 dark:text-amber-300 text-[11px] font-bold transition-colors cursor-pointer"
                         >
                           +1 кг
                         </button>
                         <button
                           onClick={() => addCatalogItem(grain.name, 'grain', 5.0, 'kg')}
-                          className="flex-1 py-1 rounded bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold transition-colors"
+                          className="flex-1 py-1 rounded bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold transition-colors cursor-pointer"
                         >
                           +5 кг
                         </button>
@@ -586,13 +719,13 @@ export const IngredientMatcher: React.FC<Props> = ({
                       <div className="mt-2 flex items-center gap-1">
                         <button
                           onClick={() => addCatalogItem(hop.name, 'hop', 50, 'g')}
-                          className="flex-1 py-1 rounded bg-amber-100 hover:bg-amber-200 dark:bg-stone-700 dark:hover:bg-stone-600 text-amber-900 dark:text-amber-300 text-[11px] font-bold transition-colors"
+                          className="flex-1 py-1 rounded bg-amber-100 hover:bg-amber-200 dark:bg-stone-700 dark:hover:bg-stone-600 text-amber-900 dark:text-amber-300 text-[11px] font-bold transition-colors cursor-pointer"
                         >
                           +50 г
                         </button>
                         <button
                           onClick={() => addCatalogItem(hop.name, 'hop', 100, 'g')}
-                          className="flex-1 py-1 rounded bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold transition-colors"
+                          className="flex-1 py-1 rounded bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold transition-colors cursor-pointer"
                         >
                           +100 г
                         </button>
@@ -602,7 +735,16 @@ export const IngredientMatcher: React.FC<Props> = ({
                 })}
 
               {catalogTab === 'yeast' &&
-                COMMON_YEASTS.filter(y => y.name.toLowerCase().includes(catalogSearch.toLowerCase())).map(yeast => {
+                COMMON_YEASTS
+                  .filter(y => {
+                    const matchSearch = y.name.toLowerCase().includes(catalogSearch.toLowerCase()) || y.lab.toLowerCase().includes(catalogSearch.toLowerCase());
+                    if (!matchSearch) return false;
+                    if (yeastLabFilter === 'mangrove') return y.lab === "Mangrove Jack's";
+                    if (yeastLabFilter === 'fermentis') return y.lab === 'Fermentis';
+                    if (yeastLabFilter === 'lallemand') return y.lab === 'Lallemand';
+                    return true;
+                  })
+                  .map(yeast => {
                   const currentAmount = getPantryAmount(yeast.name);
                   const inPantry = currentAmount > 0;
                   return (
@@ -616,7 +758,7 @@ export const IngredientMatcher: React.FC<Props> = ({
                     >
                       <div>
                         <div className="flex justify-between items-start">
-                          <span className="text-[10px] text-purple-600 dark:text-purple-400 font-semibold">{yeast.lab}</span>
+                          <span className={`text-[10px] font-bold ${yeast.lab === "Mangrove Jack's" ? 'text-indigo-600 dark:text-indigo-400' : 'text-purple-600 dark:text-purple-400'}`}>{yeast.lab}</span>
                           {inPantry && (
                             <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500 text-white font-mono font-bold">
                               {currentAmount} шт
@@ -626,21 +768,21 @@ export const IngredientMatcher: React.FC<Props> = ({
                         <div className="font-bold text-xs text-stone-900 dark:text-stone-100 line-clamp-1 mt-0.5">
                           {yeast.name}
                         </div>
-                        <div className="text-[10px] text-stone-500">
-                          {yeast.type === 'ale' ? 'Эль' : 'Лагер'} • {yeast.attenuationPercent}%
+                        <div className="text-[10px] text-stone-500 line-clamp-1">
+                          {yeast.type === 'ale' ? 'Эль' : yeast.type === 'lager' ? 'Лагер' : yeast.type === 'wheat' ? 'Пшеничные' : 'Бельгия'} • {yeast.attenuationPercent}%
                         </div>
                       </div>
 
                       <div className="mt-2 flex items-center gap-1">
                         <button
                           onClick={() => addCatalogItem(yeast.name, 'yeast', 1, 'pack')}
-                          className="flex-1 py-1 rounded bg-amber-100 hover:bg-amber-200 dark:bg-stone-700 dark:hover:bg-stone-600 text-amber-900 dark:text-amber-300 text-[11px] font-bold transition-colors"
+                          className="flex-1 py-1 rounded bg-amber-100 hover:bg-amber-200 dark:bg-stone-700 dark:hover:bg-stone-600 text-amber-900 dark:text-amber-300 text-[11px] font-bold transition-colors cursor-pointer"
                         >
                           +1 пач
                         </button>
                         <button
                           onClick={() => addCatalogItem(yeast.name, 'yeast', 2, 'pack')}
-                          className="flex-1 py-1 rounded bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold transition-colors"
+                          className="flex-1 py-1 rounded bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold transition-colors cursor-pointer"
                         >
                           +2 пач
                         </button>
@@ -699,7 +841,7 @@ export const IngredientMatcher: React.FC<Props> = ({
           <div className="text-center py-8 px-4 rounded-2xl border-2 border-dashed border-stone-200 dark:border-stone-800 space-y-3">
             <Package className="w-10 h-10 text-stone-300 dark:text-stone-600 mx-auto" />
             <div className="text-sm font-bold text-stone-700 dark:text-stone-300">
-              Ваша кладовая пока пуста
+              Ваш склад пока пуст
             </div>
             <p className="text-xs text-stone-500 max-w-md mx-auto">
               Нажмите кнопку <b>«Типовой набор»</b> для быстрой загрузки стандартного набора пивовара или откройте <b>«Каталог ингредиентов»</b>, чтобы добавить имеющиеся солод, хмель и дрожжи.
