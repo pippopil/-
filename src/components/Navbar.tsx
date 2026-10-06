@@ -94,9 +94,11 @@ export const Navbar: React.FC<Props> = ({
               onClick={() => setActiveTab('calculator')}
               className="flex items-center gap-2.5 cursor-pointer text-left focus:outline-none"
             >
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white shadow-sm shadow-amber-500/30 shrink-0">
-                <Beer className="w-5 h-5 sm:w-6 sm:h-6" />
-              </div>
+              <img
+                src="/icon.svg"
+                alt="МастерВарка"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl shadow-sm shadow-amber-500/20 shrink-0 object-contain"
+              />
               <div className="min-w-0">
                 <div className="font-extrabold text-base sm:text-lg tracking-tight text-stone-900 dark:text-white leading-tight">
                   Мастер<span className="text-amber-600 dark:text-amber-400">Варка</span>

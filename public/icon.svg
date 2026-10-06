@@ -1,44 +1,229 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+    <!-- Background Gradient -->
+    <radialGradient id="bgGrad" cx="50%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#292524"/>
+      <stop offset="55%" stop-color="#1c1917"/>
+      <stop offset="100%" stop-color="#0c0a09"/>
+    </radialGradient>
+
+    <!-- Warm Amber Glow behind Mug -->
+    <radialGradient id="amberGlow" cx="50%" cy="58%" r="48%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.45"/>
+      <stop offset="50%" stop-color="#d97706" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#b45309" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Golden Beer Liquid Gradient -->
+    <linearGradient id="beerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#d97706"/>
+      <stop offset="20%" stop-color="#f59e0b"/>
+      <stop offset="50%" stop-color="#fbbf24"/>
+      <stop offset="80%" stop-color="#f59e0b"/>
       <stop offset="100%" stop-color="#b45309"/>
     </linearGradient>
-    <linearGradient id="foam" x1="0%" y1="0%" x2="0%" y2="100%">
+
+    <!-- Glass Specular Highlight -->
+    <linearGradient id="glassLight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.7"/>
+      <stop offset="20%" stop-color="#ffffff" stop-opacity="0.3"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.4"/>
+    </linearGradient>
+
+    <!-- Glass Base Gradient -->
+    <linearGradient id="baseGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#78350f"/>
+      <stop offset="50%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#451a03"/>
+    </linearGradient>
+
+    <!-- Foam Top 3D Gradient -->
+    <linearGradient id="foamTop" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="65%" stop-color="#fefce8"/>
       <stop offset="100%" stop-color="#fef3c7"/>
     </linearGradient>
-    <linearGradient id="beer" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#f59e0b"/>
-      <stop offset="50%" stop-color="#fbbf24"/>
-      <stop offset="100%" stop-color="#d97706"/>
+
+    <!-- Foam Shadow / Depth -->
+    <linearGradient id="foamShadow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#ca8a04" stop-opacity="0.6"/>
     </linearGradient>
+
+    <!-- Drop Shadow for Realistic Mug Depth -->
+    <filter id="shadowFilter" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+
+    <filter id="foamGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#b45309" flood-opacity="0.25"/>
+    </filter>
   </defs>
-  <!-- Background rounded squircle -->
-  <rect width="512" height="512" rx="120" fill="url(#bg)"/>
-  
-  <!-- Mug body -->
-  <path d="M140 180 C140 160 160 160 180 160 L332 160 C352 160 372 160 372 180 L360 410 C358 430 338 440 318 440 L194 440 C174 440 154 430 152 410 Z" fill="url(#beer)"/>
-  
-  <!-- Mug handle -->
-  <path d="M366 220 L400 220 C430 220 446 244 446 274 L446 330 C446 360 430 384 400 384 L356 384" fill="none" stroke="#fef3c7" stroke-width="32" stroke-linecap="round"/>
 
-  <!-- Beer highlights inside -->
-  <path d="M175 190 L165 400" stroke="#fef08a" stroke-width="12" stroke-linecap="round" opacity="0.6"/>
-  <path d="M337 190 L347 400" stroke="#92400e" stroke-width="10" stroke-linecap="round" opacity="0.4"/>
+  <!-- 1. Squircle App Icon Base -->
+  <rect width="512" height="512" rx="116" fill="url(#bgGrad)"/>
+  <rect width="508" height="508" x="2" y="2" rx="114" fill="none" stroke="#ca8a04" stroke-width="2.5" stroke-opacity="0.35"/>
 
-  <!-- Foam head -->
-  <ellipse cx="256" cy="160" rx="126" ry="36" fill="url(#foam)"/>
-  <circle cx="160" cy="140" r="38" fill="url(#foam)"/>
-  <circle cx="215" cy="120" r="46" fill="url(#foam)"/>
-  <circle cx="280" cy="115" r="48" fill="url(#foam)"/>
-  <circle cx="340" cy="135" r="40" fill="url(#foam)"/>
-  <!-- Drips of foam -->
-  <path d="M170 180 C170 215 190 215 190 180" fill="url(#foam)"/>
-  <path d="M290 180 C290 230 312 230 312 180" fill="url(#foam)"/>
+  <!-- 2. Warm ambient background glow -->
+  <circle cx="245" cy="290" r="170" fill="url(#amberGlow)"/>
 
-  <!-- Hop leaf detail on the mug -->
-  <path d="M256 260 C240 280 230 310 256 340 C282 310 272 280 256 260 Z" fill="#15803d" opacity="0.9"/>
-  <path d="M236 295 C220 310 225 330 256 340" fill="none" stroke="#86efac" stroke-width="4"/>
-  <path d="M276 295 C292 310 287 330 256 340" fill="none" stroke="#86efac" stroke-width="4"/>
+  <!-- 3. Cast shadow under mug base -->
+  <ellipse cx="242" cy="445" rx="130" ry="24" fill="#050505" opacity="0.65"/>
+  <ellipse cx="242" cy="442" rx="110" ry="16" fill="#0a0a0a" opacity="0.8"/>
+
+  <!-- 4. Glass Mug Handle (Behind & Side) -->
+  <g filter="url(#shadowFilter)">
+    <!-- Outer handle loop -->
+    <path d="M 330 215 C 410 215 440 245 440 295 C 440 345 415 375 330 380 L 330 338 C 385 335 396 320 396 295 C 396 270 380 254 330 252 Z" fill="#92400e"/>
+    <path d="M 330 215 C 410 215 440 245 440 295 C 440 345 415 375 330 380 L 330 342 C 382 338 394 322 394 295 C 394 268 378 252 330 250 Z" fill="#f59e0b" opacity="0.5"/>
+    <!-- Glass shine on handle edge -->
+    <path d="M 345 224 C 405 225 430 250 430 295 C 430 340 405 365 345 370" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" opacity="0.75"/>
+  </g>
+
+  <!-- 5. Mug Body (Beer Liquid + Glass Facets) -->
+  <g filter="url(#shadowFilter)">
+    <!-- Main glass silhouette / liquid fill -->
+    <path d="M 135 185 
+             L 145 405 
+             C 148 426 166 438 188 438 
+             L 298 438 
+             C 320 438 338 426 341 405 
+             L 351 185 
+             Z" 
+          fill="url(#beerGrad)"/>
+
+    <!-- Bottom thick glass pedestal -->
+    <path d="M 143 392 L 145 405 C 148 426 166 438 188 438 L 298 438 C 320 438 338 426 341 405 L 343 392 Z" fill="url(#baseGrad)"/>
+    <!-- Bottom glass rim highlight -->
+    <path d="M 160 428 C 190 435 296 435 326 428" stroke="#fef08a" stroke-width="5" stroke-linecap="round" opacity="0.8"/>
+
+    <!-- Vertical Glass Flutes / Dimples for classic heavy beer seidel look -->
+    <!-- Flute 1 (Left shade) -->
+    <path d="M 152 195 L 160 395 C 160 395 174 395 174 195 Z" fill="#b45309" opacity="0.35"/>
+    <path d="M 154 195 L 162 395" stroke="#fef3c7" stroke-width="6" stroke-linecap="round" opacity="0.7"/>
+
+    <!-- Flute 2 (Center-left glow) -->
+    <path d="M 190 190 L 196 400" stroke="#fef08a" stroke-width="9" stroke-linecap="round" opacity="0.55"/>
+    <!-- Flute 3 (Center bright glow) -->
+    <path d="M 243 190 L 243 402" stroke="#fde047" stroke-width="12" stroke-linecap="round" opacity="0.45"/>
+    <!-- Flute 4 (Center-right depth) -->
+    <path d="M 292 190 L 288 400" stroke="#d97706" stroke-width="8" stroke-linecap="round" opacity="0.4"/>
+    <!-- Flute 5 (Right edge shadow & specular) -->
+    <path d="M 334 195 L 328 395" stroke="#ffffff" stroke-width="7" stroke-linecap="round" opacity="0.6"/>
+
+    <!-- Rising Carbonation Bubbles in the Beer -->
+    <circle cx="175" cy="370" r="4.5" fill="#ffffff" opacity="0.7"/>
+    <circle cx="185" cy="330" r="3.5" fill="#fef08a" opacity="0.6"/>
+    <circle cx="178" cy="275" r="5" fill="#ffffff" opacity="0.65"/>
+    <circle cx="192" cy="225" r="4" fill="#fef08a" opacity="0.75"/>
+    
+    <circle cx="230" cy="380" r="4" fill="#ffffff" opacity="0.6"/>
+    <circle cx="245" cy="345" r="6" fill="#ffffff" opacity="0.8"/>
+    <circle cx="238" cy="290" r="4.5" fill="#fef08a" opacity="0.7"/>
+    <circle cx="252" cy="240" r="5.5" fill="#ffffff" opacity="0.75"/>
+    
+    <circle cx="300" cy="365" r="3.5" fill="#fef08a" opacity="0.6"/>
+    <circle cx="312" cy="310" r="5" fill="#ffffff" opacity="0.7"/>
+    <circle cx="295" cy="260" r="4" fill="#ffffff" opacity="0.65"/>
+    <circle cx="308" cy="215" r="5" fill="#fef08a" opacity="0.8"/>
+
+    <!-- Left glossy vertical glass glare -->
+    <path d="M 144 195 Q 146 295 152 385" stroke="url(#glassLight)" stroke-width="14" stroke-linecap="round"/>
+  </g>
+
+  <!-- 6. Thick, Overflowing Luxurious Foam Head (Пена) -->
+  <g filter="url(#foamGlow)">
+    <!-- Foam shadow base along the rim -->
+    <path d="M 130 185 Q 243 195 356 185 Q 243 175 130 185 Z" fill="#ca8a04" opacity="0.35"/>
+
+    <!-- Flowing foam drips dripping down the glass -->
+    <!-- Big drip 1 (left) -->
+    <path d="M 152 180 C 150 220 168 250 174 250 C 180 250 188 220 184 180 Z" fill="url(#foamTop)"/>
+    <circle cx="174" cy="246" r="6" fill="#ffffff"/>
+
+    <!-- Drip 2 (center-left short) -->
+    <path d="M 198 180 C 196 210 208 225 212 225 C 217 225 224 210 222 180 Z" fill="url(#foamTop)"/>
+
+    <!-- Big dramatic drip 3 (center-right) -->
+    <path d="M 264 178 C 262 230 278 275 286 275 C 294 275 304 230 300 178 Z" fill="url(#foamTop)"/>
+    <circle cx="286" cy="270" r="7.5" fill="#ffffff"/>
+
+    <!-- Drip 4 (right side spill over rim) -->
+    <path d="M 326 180 C 325 212 340 230 345 230 C 350 230 356 210 354 180 Z" fill="url(#foamTop)"/>
+
+    <!-- Voluminous 3D Foam Puffs / Billows -->
+    <!-- Background layer billows -->
+    <circle cx="150" cy="162" r="34" fill="#fef3c7"/>
+    <circle cx="195" cy="140" r="42" fill="#fef3c7"/>
+    <circle cx="245" cy="130" r="46" fill="#fef3c7"/>
+    <circle cx="298" cy="136" r="44" fill="#fef3c7"/>
+    <circle cx="342" cy="158" r="36" fill="#fef3c7"/>
+
+    <!-- Main Front Creamy Foam Clouds -->
+    <!-- Billow 1: far left puff overflowing over lip -->
+    <circle cx="132" cy="172" r="26" fill="url(#foamTop)"/>
+    <circle cx="156" cy="155" r="36" fill="url(#foamTop)"/>
+    
+    <!-- Billow 2: mid-left luxuriant crest -->
+    <circle cx="196" cy="132" r="44" fill="url(#foamTop)"/>
+    <ellipse cx="204" cy="122" rx="36" ry="28" fill="#ffffff"/>
+    
+    <!-- Billow 3: summit crowning peak in center -->
+    <circle cx="244" cy="118" r="50" fill="url(#foamTop)"/>
+    <ellipse cx="244" cy="104" rx="42" ry="32" fill="#ffffff"/>
+    
+    <!-- Billow 4: mid-right mountain puff -->
+    <circle cx="295" cy="128" r="45" fill="url(#foamTop)"/>
+    <ellipse cx="298" cy="118" rx="36" ry="28" fill="#ffffff"/>
+    
+    <!-- Billow 5: far-right overflow spilling near handle -->
+    <circle cx="342" cy="152" r="36" fill="url(#foamTop)"/>
+    <circle cx="360" cy="174" r="24" fill="url(#foamTop)"/>
+
+    <!-- Creamy Front Overflow Lip (Smooth continuous cap across top of glass) -->
+    <path d="M 125 182 
+             C 125 160 145 152 165 152 
+             C 185 152 195 138 220 138 
+             C 245 138 255 130 280 130 
+             C 305 130 320 144 340 144 
+             C 360 144 372 165 370 184 
+             C 365 202 345 198 335 194 
+             C 320 188 310 196 295 196 
+             C 275 196 265 188 245 188 
+             C 225 188 215 195 195 195 
+             C 175 195 165 188 145 188 
+             C 132 188 125 192 125 182 Z" 
+          fill="url(#foamTop)"/>
+
+    <!-- Delicate Micro-bubbles on Top of Foam -->
+    <circle cx="165" cy="136" r="4.5" fill="#ffffff"/>
+    <circle cx="178" cy="128" r="3" fill="#ffffff"/>
+    <circle cx="218" cy="102" r="4" fill="#ffffff"/>
+    <circle cx="232" cy="95" r="5" fill="#ffffff"/>
+    <circle cx="260" cy="98" r="4" fill="#ffffff"/>
+    <circle cx="276" cy="108" r="3.5" fill="#ffffff"/>
+    <circle cx="324" cy="122" r="4.5" fill="#ffffff"/>
+    <circle cx="338" cy="134" r="3" fill="#ffffff"/>
+
+    <!-- Soft Cream Highlights -->
+    <ellipse cx="242" cy="112" rx="28" ry="12" fill="#ffffff" opacity="0.9"/>
+    <ellipse cx="192" cy="124" rx="20" ry="8" fill="#ffffff" opacity="0.85"/>
+    <ellipse cx="294" cy="122" rx="22" ry="9" fill="#ffffff" opacity="0.85"/>
+  </g>
+
+  <!-- 7. Golden Hop Cone Emblem on the Front of the Mug -->
+  <g filter="url(#shadowFilter)">
+    <!-- Hop cone shield emblem -->
+    <path d="M 242 272 
+             C 225 292 216 318 242 344 
+             C 268 318 259 292 242 272 Z" 
+          fill="#15803d" opacity="0.85"/>
+    <path d="M 242 272 L 242 342" stroke="#86efac" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+    <!-- Hop bract leaves -->
+    <path d="M 226 304 C 235 315 242 322 242 322" stroke="#86efac" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+    <path d="M 258 304 C 249 315 242 322 242 322" stroke="#86efac" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+    <path d="M 229 324 C 236 332 242 336 242 336" stroke="#86efac" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+    <path d="M 255 324 C 248 332 242 336 242 336" stroke="#86efac" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+  </g>
 </svg>
