@@ -45,6 +45,7 @@ import {
   Check,
   Search
 } from 'lucide-react';
+import { SafeNumberInput } from './SafeNumberInput';
 
 interface Props {
   recipe: Recipe;
@@ -418,13 +419,12 @@ export const RecipeBuilder: React.FC<Props> = ({
             <label className="text-[11px] font-medium text-stone-500 dark:text-stone-400 block mb-1">
               Объем варки (л)
             </label>
-            <input
-              type="number"
-              min="1"
-              max="1000"
-              step="1"
+            <SafeNumberInput
               value={recipe.batchSizeL}
-              onChange={(e) => updateParams({ batchSizeL: Math.max(1, parseFloat(e.target.value) || 20) })}
+              onChange={(val) => updateParams({ batchSizeL: val })}
+              min={1}
+              max={1000}
+              fallbackValue={20}
               className="w-full bg-stone-50 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700 rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-stone-800 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-amber-500"
             />
           </div>
@@ -433,13 +433,13 @@ export const RecipeBuilder: React.FC<Props> = ({
             <label className="text-[11px] font-medium text-stone-500 dark:text-stone-400 block mb-1">
               Эффективность (%)
             </label>
-            <input
-              type="number"
-              min="40"
-              max="95"
-              step="1"
+            <SafeNumberInput
               value={recipe.efficiencyPercent}
-              onChange={(e) => updateParams({ efficiencyPercent: Math.max(40, Math.min(95, parseFloat(e.target.value) || 72)) })}
+              onChange={(val) => updateParams({ efficiencyPercent: val })}
+              min={40}
+              max={95}
+              fallbackValue={72}
+              allowDecimals={false}
               className="w-full bg-stone-50 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700 rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-stone-800 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-amber-500"
             />
           </div>
@@ -448,13 +448,13 @@ export const RecipeBuilder: React.FC<Props> = ({
             <label className="text-[11px] font-medium text-stone-500 dark:text-stone-400 block mb-1">
               Кипячение (мин)
             </label>
-            <input
-              type="number"
-              min="30"
-              max="180"
-              step="5"
+            <SafeNumberInput
               value={recipe.boilTimeMin}
-              onChange={(e) => updateParams({ boilTimeMin: Math.max(30, parseInt(e.target.value, 10) || 60) })}
+              onChange={(val) => updateParams({ boilTimeMin: val })}
+              min={30}
+              max={180}
+              fallbackValue={60}
+              allowDecimals={false}
               className="w-full bg-stone-50 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700 rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-stone-800 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-amber-500"
             />
           </div>
@@ -463,13 +463,13 @@ export const RecipeBuilder: React.FC<Props> = ({
             <label className="text-[11px] font-medium text-stone-500 dark:text-stone-400 block mb-1">
               Гидромодуль (л/кг)
             </label>
-            <input
-              type="number"
-              min="2.0"
-              max="6.0"
-              step="0.1"
+            <SafeNumberInput
               value={recipe.grainRatioLPerKg}
-              onChange={(e) => updateParams({ grainRatioLPerKg: Math.max(2, parseFloat(e.target.value) || 3.5) })}
+              onChange={(val) => updateParams({ grainRatioLPerKg: val })}
+              min={2.0}
+              max={6.0}
+              fallbackValue={3.5}
+              allowDecimals={true}
               className="w-full bg-stone-50 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700 rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-stone-800 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-amber-500"
             />
           </div>
@@ -478,13 +478,13 @@ export const RecipeBuilder: React.FC<Props> = ({
             <label className="text-[11px] font-medium text-stone-500 dark:text-stone-400 block mb-1">
               Темп. зерна (°C)
             </label>
-            <input
-              type="number"
-              min="0"
-              max="35"
-              step="1"
+            <SafeNumberInput
               value={recipe.grainTempC}
-              onChange={(e) => updateParams({ grainTempC: parseFloat(e.target.value) || 20 })}
+              onChange={(val) => updateParams({ grainTempC: val })}
+              min={0}
+              max={35}
+              fallbackValue={20}
+              allowDecimals={false}
               className="w-full bg-stone-50 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700 rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-stone-800 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-amber-500"
             />
           </div>
@@ -493,13 +493,13 @@ export const RecipeBuilder: React.FC<Props> = ({
             <label className="text-[11px] font-medium text-stone-500 dark:text-stone-400 block mb-1">
               CO2 Карбонизация (vol)
             </label>
-            <input
-              type="number"
-              min="1.0"
-              max="4.5"
-              step="0.1"
+            <SafeNumberInput
               value={recipe.targetCarbonationVol}
-              onChange={(e) => updateParams({ targetCarbonationVol: Math.max(1, parseFloat(e.target.value) || 2.4) })}
+              onChange={(val) => updateParams({ targetCarbonationVol: val })}
+              min={1.0}
+              max={4.5}
+              fallbackValue={2.4}
+              allowDecimals={true}
               className="w-full bg-stone-50 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700 rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-stone-800 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-amber-500"
             />
           </div>
@@ -1523,13 +1523,12 @@ export const RecipeBuilder: React.FC<Props> = ({
               <label className="text-xs font-semibold text-stone-500 block">
                 Новый целевой объем варки (литров):
               </label>
-              <input
-                type="number"
-                min="5"
-                max="1000"
-                step="5"
+              <SafeNumberInput
                 value={targetScaleL}
-                onChange={(e) => setTargetScaleL(Math.max(1, parseFloat(e.target.value) || 20))}
+                onChange={(val) => setTargetScaleL(val)}
+                min={1}
+                max={1000}
+                fallbackValue={20}
                 className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-300 dark:border-stone-700 rounded-xl px-3 py-2 text-lg font-bold font-mono text-center text-amber-700 dark:text-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
               <div className="flex justify-center gap-2 pt-1">

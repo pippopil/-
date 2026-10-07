@@ -41,6 +41,7 @@ import {
   Zap,
   X
 } from 'lucide-react';
+import { SafeNumberInput } from './SafeNumberInput';
 
 interface Props {
   inventory: InventoryItem[];
@@ -397,13 +398,12 @@ export const IngredientMatcher: React.FC<Props> = ({
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1.5 bg-white dark:bg-stone-800 px-3 py-1.5 rounded-xl border border-stone-200 dark:border-stone-700 shadow-xs">
-            <input
-              type="number"
-              min="2"
-              max="500"
-              step="1"
+            <SafeNumberInput
               value={globalBatchSizeL}
-              onChange={(e) => onSetGlobalBatchSizeL(Math.max(1, parseFloat(e.target.value) || 20))}
+              onChange={(val) => onSetGlobalBatchSizeL(val)}
+              min={1}
+              max={500}
+              fallbackValue={20}
               className="w-16 font-mono font-black text-center text-lg text-amber-700 dark:text-amber-400 bg-transparent focus:outline-none"
             />
             <span className="font-bold text-xs text-stone-500">ЛИТРОВ</span>

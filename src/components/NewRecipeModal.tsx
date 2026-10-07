@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   FileText,
   Sparkles,
@@ -11,7 +11,9 @@ import {
   Filter,
   Beer,
   ArrowRight,
-  Info
+  Info,
+  Minus,
+  Plus
 } from 'lucide-react';
 import { Recipe } from '../types/brewing';
 import { BJCP_STYLES, calculateBrewMetrics, ebcToHex } from '../utils/brewingMath';
@@ -32,11 +34,20 @@ export const NewRecipeModal: React.FC<Props> = ({
 }) => {
   const [creationMode, setCreationMode] = useState<'blank' | 'style'>('blank');
 
-  // Параметры для чистого рецепта с нуля
+  // Параметры для чистого рецепта с нуля (храним строкой для свободного ввода без блокировки)
   const [blankName, setBlankName] = useState('Мой новый рецепт');
-  const [blankBatchSizeL, setBlankBatchSizeL] = useState(defaultBatchSizeL);
-  const [blankEfficiency, setBlankEfficiency] = useState(72);
-  const [blankBoilTime, setBlankBoilTime] = useState(60);
+  const [blankBatchSizeL, setBlankBatchSizeL] = useState<string>(String(defaultBatchSizeL || 20));
+  const [blankEfficiency, setBlankEfficiency] = useState<string>('72');
+  const [blankBoilTime, setBlankBoilTime] = useState<string>('60');
+
+  // Синхронизируем начальные значения при открытии окна
+  useEffect(() => {
+    if (isOpen) {
+      setBlankBatchSizeL(String(defaultBatchSizeL || 20));
+      setBlankEfficiency('72');
+      setBlankBoilTime('60');
+    }
+  }, [isOpen, defaultBatchSizeL]);
 
   // Фильтры стилей BJCP
   const [styleSearch, setStyleSearch] = useState('');
@@ -79,6 +90,10 @@ export const NewRecipeModal: React.FC<Props> = ({
 
   // Создание чистого рецепта с нуля
   const handleCreateBlank = () => {
+    const finalBatchSizeL = Math.max(1, Math.min(1000, parseFloat(blankBatchSizeL) || 20));
+    const finalEfficiency = Math.max(40, Math.min(95, parseFloat(blankEfficiency) || 72));
+    const finalBoilTime = Math.max(30, Math.min(180, parseInt(blankBoilTime, 10) || 60));
+
     const newRecipe: Recipe = {
       id: `recipe_custom_${Date.now()}`,
       name: blankName.trim() || 'Новый рецепт (с нуля)',
@@ -86,9 +101,9 @@ export const NewRecipeModal: React.FC<Props> = ({
       category: 'Авторские рецепты',
       description: 'Чистый авторский шаблон, разработанный пивоваром с нуля.',
       author: 'Вы',
-      batchSizeL: blankBatchSizeL,
-      boilTimeMin: blankBoilTime,
-      efficiencyPercent: blankEfficiency,
+      batchSizeL: finalBatchSizeL,
+      boilTimeMin: finalBoilTime,
+      efficiencyPercent: finalEfficiency,
       grainRatioLPerKg: 3.5,
       grainTempC: 20,
       targetCarbonationVol: 2.4,
@@ -97,7 +112,7 @@ export const NewRecipeModal: React.FC<Props> = ({
         {
           id: `grain_${Date.now()}_1`,
           name: 'Светлый базовый солод (Pale / Pilsner)',
-          weightKg: Number(((blankBatchSizeL * 0.22)).toFixed(1)), // ~4.4 кг на 20 л
+          weightKg: Number(((finalBatchSizeL * 0.22)).toFixed(1)), // ~4.4 кг на 20 л
           potentialSg: 1.038,
           colorEbc: 4.5,
           type: 'base'
@@ -107,9 +122,9 @@ export const NewRecipeModal: React.FC<Props> = ({
         {
           id: `hop_${Date.now()}_1`,
           name: 'Хмель на горечь (напр. Magnum / Tradition)',
-          weightG: 20,
+          weightG: Math.max(5, Math.round(finalBatchSizeL * 1.0)),
           alphaAcid: 12.0,
-          boilTimeMin: blankBoilTime,
+          boilTimeMin: finalBoilTime,
           use: 'boil'
         }
       ],
@@ -182,9 +197,12 @@ export const NewRecipeModal: React.FC<Props> = ({
     }
 
     // Рассчитываем ориентировочный базовый вес засыпи для целевой плотности стиля
+    const finalBatchSizeL = Math.max(1, Math.min(1000, parseFloat(blankBatchSizeL) || 20));
+    const finalEfficiency = Math.max(40, Math.min(95, parseFloat(blankEfficiency) || 72));
+
     const targetOg = (activeStyle.ogRange[0] + activeStyle.ogRange[1]) / 2;
     const targetPoints = (targetOg - 1.0) * 1000;
-    const estGrainWeight = Math.max(3.5, Number(((targetPoints * blankBatchSizeL * 0.264172) / (37 * (blankEfficiency / 100) * 2.20462)).toFixed(1)));
+    const estGrainWeight = Math.max(3.5, Number(((targetPoints * finalBatchSizeL * 0.264172) / (37 * (finalEfficiency / 100) * 2.20462)).toFixed(1)));
 
     // Подбираем базовый солод в соответствии со стилем
     let baseMaltName = 'Pale Ale Malt';
@@ -207,9 +225,9 @@ export const NewRecipeModal: React.FC<Props> = ({
       category: activeStyle.category,
       description: activeStyle.description,
       author: 'Вы (по стилю BJCP)',
-      batchSizeL: blankBatchSizeL,
+      batchSizeL: finalBatchSizeL,
       boilTimeMin: activeStyle.fermentationType === 'lager' ? 75 : 60,
-      efficiencyPercent: blankEfficiency,
+      efficiencyPercent: finalEfficiency,
       grainRatioLPerKg: 3.5,
       grainTempC: 20,
       targetCarbonationVol: activeStyle.category.includes('Пшенич') ? 2.8 : 2.4,
@@ -371,47 +389,239 @@ export const NewRecipeModal: React.FC<Props> = ({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Объем варки */}
                   <div>
-                    <label className="text-xs font-medium text-stone-500 dark:text-stone-400 block mb-1">
-                      Объем варки (литры):
-                    </label>
-                    <input
-                      type="number"
-                      min="5"
-                      max="1000"
-                      value={blankBatchSizeL}
-                      onChange={(e) => setBlankBatchSizeL(Math.max(1, parseFloat(e.target.value) || 20))}
-                      className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-3 py-2 text-sm font-mono font-bold text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    />
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-stone-700 dark:text-stone-300">
+                        Объем партии (л):
+                      </label>
+                      <span className="text-[11px] font-mono font-semibold text-amber-600 dark:text-amber-400">
+                        {parseFloat(blankBatchSizeL) || 20} л
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const cur = parseFloat(blankBatchSizeL) || 20;
+                          const step = cur > 15 ? 5 : 1;
+                          setBlankBatchSizeL(String(Math.max(1, cur - step)));
+                        }}
+                        className="w-8 h-8 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                        title="Уменьшить объем"
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                      </button>
+
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={blankBatchSizeL}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(',', '.');
+                            if (raw === '' || /^[0-9]*\.?[0-9]*$/.test(raw)) {
+                              setBlankBatchSizeL(raw);
+                            }
+                          }}
+                          onBlur={() => {
+                            const val = parseFloat(blankBatchSizeL);
+                            if (isNaN(val) || val <= 0) {
+                              setBlankBatchSizeL('20');
+                            } else {
+                              setBlankBatchSizeL(String(Math.min(1000, Math.max(1, Math.round(val * 10) / 10))));
+                            }
+                          }}
+                          placeholder="20"
+                          className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-2.5 py-1.5 text-center text-sm font-mono font-bold text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const cur = parseFloat(blankBatchSizeL) || 20;
+                          const step = cur >= 15 ? 5 : 1;
+                          setBlankBatchSizeL(String(Math.min(1000, cur + step)));
+                        }}
+                        className="w-8 h-8 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                        title="Увеличить объем"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {[10, 15, 20, 25, 30, 50].map((vol) => (
+                        <button
+                          key={vol}
+                          type="button"
+                          onClick={() => setBlankBatchSizeL(String(vol))}
+                          className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-semibold transition-all cursor-pointer ${
+                            parseFloat(blankBatchSizeL) === vol
+                              ? 'bg-amber-500 text-stone-950 font-bold shadow-2xs'
+                              : 'bg-stone-100 dark:bg-stone-800/80 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
+                          }`}
+                        >
+                          {vol}л
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
+                  {/* Эффективность */}
                   <div>
-                    <label className="text-xs font-medium text-stone-500 dark:text-stone-400 block mb-1">
-                      Эффективность варочника (%):
-                    </label>
-                    <input
-                      type="number"
-                      min="40"
-                      max="95"
-                      value={blankEfficiency}
-                      onChange={(e) => setBlankEfficiency(Math.max(40, Math.min(95, parseFloat(e.target.value) || 72)))}
-                      className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-3 py-2 text-sm font-mono font-bold text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    />
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-stone-700 dark:text-stone-300">
+                        Эффективность:
+                      </label>
+                      <span className="text-[11px] font-mono font-semibold text-amber-600 dark:text-amber-400">
+                        {parseFloat(blankEfficiency) || 72}%
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const cur = parseFloat(blankEfficiency) || 72;
+                          setBlankEfficiency(String(Math.max(40, cur - 1)));
+                        }}
+                        className="w-8 h-8 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                      </button>
+
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={blankEfficiency}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(',', '.');
+                            if (raw === '' || /^[0-9]*\.?[0-9]*$/.test(raw)) {
+                              setBlankEfficiency(raw);
+                            }
+                          }}
+                          onBlur={() => {
+                            const val = parseFloat(blankEfficiency);
+                            if (isNaN(val) || val < 40) {
+                              setBlankEfficiency('72');
+                            } else {
+                              setBlankEfficiency(String(Math.min(95, Math.max(40, Math.round(val)))));
+                            }
+                          }}
+                          placeholder="72"
+                          className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-2.5 py-1.5 text-center text-sm font-mono font-bold text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const cur = parseFloat(blankEfficiency) || 72;
+                          setBlankEfficiency(String(Math.min(95, cur + 1)));
+                        }}
+                        className="w-8 h-8 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {[65, 70, 72, 75, 80].map((eff) => (
+                        <button
+                          key={eff}
+                          type="button"
+                          onClick={() => setBlankEfficiency(String(eff))}
+                          className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-semibold transition-all cursor-pointer ${
+                            parseFloat(blankEfficiency) === eff
+                              ? 'bg-amber-500 text-stone-950 font-bold shadow-2xs'
+                              : 'bg-stone-100 dark:bg-stone-800/80 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
+                          }`}
+                        >
+                          {eff}%
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
+                  {/* Кипячение */}
                   <div>
-                    <label className="text-xs font-medium text-stone-500 dark:text-stone-400 block mb-1">
-                      Время кипячения (мин):
-                    </label>
-                    <input
-                      type="number"
-                      min="30"
-                      max="180"
-                      step="5"
-                      value={blankBoilTime}
-                      onChange={(e) => setBlankBoilTime(Math.max(30, parseInt(e.target.value, 10) || 60))}
-                      className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-3 py-2 text-sm font-mono font-bold text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    />
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-stone-700 dark:text-stone-300">
+                        Кипячение:
+                      </label>
+                      <span className="text-[11px] font-mono font-semibold text-amber-600 dark:text-amber-400">
+                        {parseInt(blankBoilTime, 10) || 60} мин
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const cur = parseInt(blankBoilTime, 10) || 60;
+                          setBlankBoilTime(String(Math.max(30, cur - 15)));
+                        }}
+                        className="w-8 h-8 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                      </button>
+
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={blankBoilTime}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            if (raw === '' || /^[0-9]*$/.test(raw)) {
+                              setBlankBoilTime(raw);
+                            }
+                          }}
+                          onBlur={() => {
+                            const val = parseInt(blankBoilTime, 10);
+                            if (isNaN(val) || val < 30) {
+                              setBlankBoilTime('60');
+                            } else {
+                              setBlankBoilTime(String(Math.min(180, Math.max(30, val))));
+                            }
+                          }}
+                          placeholder="60"
+                          className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-2.5 py-1.5 text-center text-sm font-mono font-bold text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const cur = parseInt(blankBoilTime, 10) || 60;
+                          setBlankBoilTime(String(Math.min(180, cur + 15)));
+                        }}
+                        className="w-8 h-8 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {[30, 60, 75, 90].map((mins) => (
+                        <button
+                          key={mins}
+                          type="button"
+                          onClick={() => setBlankBoilTime(String(mins))}
+                          className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-semibold transition-all cursor-pointer ${
+                            parseInt(blankBoilTime, 10) === mins
+                              ? 'bg-amber-500 text-stone-950 font-bold shadow-2xs'
+                              : 'bg-stone-100 dark:bg-stone-800/80 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-stone-700'
+                          }`}
+                        >
+                          {mins}м
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -591,14 +801,36 @@ export const NewRecipeModal: React.FC<Props> = ({
                     </span>
                   </div>
 
-                  <div className="pt-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-200 dark:border-stone-700">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400">Объем варки:</span>
+                      <div className="flex items-center gap-1">
+                        {[10, 15, 20, 25, 30, 50].map((vol) => (
+                          <button
+                            key={vol}
+                            type="button"
+                            onClick={() => setBlankBatchSizeL(String(vol))}
+                            className={`px-2 py-0.5 rounded text-[11px] font-mono font-semibold transition-all cursor-pointer ${
+                              parseFloat(blankBatchSizeL) === vol
+                                ? 'bg-amber-500 text-stone-950 font-bold shadow-2xs'
+                                : 'bg-white dark:bg-stone-700 text-stone-700 dark:text-stone-300 hover:bg-amber-100'
+                            }`}
+                          >
+                            {vol} л
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-1">
                     <button
                       type="button"
                       onClick={handleCreateFromStyle}
                       className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
                     >
                       <Sparkles className="w-4 h-4" />
-                      <span>Создать рецепт по стилю «{activeStyle.name}»</span>
+                      <span>Создать рецепт по стилю «{activeStyle.name}» ({parseFloat(blankBatchSizeL) || 20} л)</span>
                     </button>
                   </div>
                 </div>

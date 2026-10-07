@@ -21,6 +21,7 @@ import {
   Minus,
   Plus
 } from 'lucide-react';
+import { SafeNumberInput } from './SafeNumberInput';
 
 export type ActiveTab =
   | 'calculator'
@@ -121,12 +122,12 @@ export const Navbar: React.FC<Props> = ({
                 >
                   <Minus className="w-3 h-3" />
                 </button>
-                <input
-                  type="number"
-                  min="2"
-                  max="500"
+                <SafeNumberInput
                   value={globalBatchSizeL}
-                  onChange={(e) => onSetGlobalBatchSizeL(Math.max(1, parseFloat(e.target.value) || 20))}
+                  onChange={(val) => onSetGlobalBatchSizeL(val)}
+                  min={1}
+                  max={500}
+                  fallbackValue={20}
                   className="w-12 text-center font-mono font-bold text-amber-700 dark:text-amber-400 bg-transparent focus:outline-none"
                 />
                 <span className="font-bold text-stone-500 dark:text-stone-400">л</span>
