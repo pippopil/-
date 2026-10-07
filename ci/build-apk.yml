@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
   build-and-release:
@@ -68,6 +70,11 @@ jobs:
           zip -r ../mastervarka-web-${{ steps.versioning.outputs.TAG_NAME }}.zip .
           cd ..
 
+      - name: Загрузка артефактов для GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
       - name: Установка Java JDK 21
         uses: actions/setup-java@v5
         with:
@@ -112,9 +119,10 @@ jobs:
             
             ---
             
-            ### 📦 Файлы для скачивания:
+            ### 📦 Файлы для скачивания и доступ:
             1. **📱 Android APK:** `mastervarka-${{ steps.versioning.outputs.TAG_NAME }}.apk` — готовый установочный файл для Android смартфонов и планшетов.
             2. **🌐 Web / PWA архив:** `mastervarka-web-${{ steps.versioning.outputs.TAG_NAME }}.zip` — автономный веб-бандл с поддержкой офлайн-работы.
+            3. **🍏 Онлайн PWA для iPhone и ПК:** [https://pippopil.github.io/-/](https://pippopil.github.io/-/) — открывается в Safari и устанавливается на экран «Домой».
             
             ### ✨ Возможности:
             - **Чистый шаблон:** создание авторских рецептов с нуля без предустановленных ингредиентов.
@@ -130,3 +138,19 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-pages:
+    name: Публикация PWA на GitHub Pages
+    needs: build-and-release
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Деплой на GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
