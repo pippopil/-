@@ -52,6 +52,7 @@ export interface BJCPStyle {
   name: string;
   nameEn: string;
   category: string;
+  fermentationType?: 'ale' | 'lager' | 'spontaneous' | 'mixed';
   ogRange: [number, number];  // SG e.g. [1.045, 1.060]
   fgRange: [number, number];  // SG e.g. [1.010, 1.015]
   abvRange: [number, number]; // % e.g. [4.5, 6.2]

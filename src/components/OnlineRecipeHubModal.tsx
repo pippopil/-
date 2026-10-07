@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Globe,
   Search,
@@ -17,7 +17,8 @@ import {
   Layers,
   HelpCircle,
   RefreshCw,
-  Plus
+  Plus,
+  Filter
 } from 'lucide-react';
 import { Recipe } from '../types/brewing';
 import {
@@ -45,9 +46,16 @@ export const OnlineRecipeHubModal: React.FC<Props> = ({
   // Активная вкладка в хабе: 'catalog' | 'url_loader' | 'guide'
   const [activeTab, setActiveTab] = useState<'catalog' | 'url_loader' | 'guide'>('catalog');
 
-  // Поиск по онлайн-каталогу
+  // Параметры поиска по онлайн-каталогу
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [fermentationFilter, setFermentationFilter] = useState<'all' | 'ale' | 'lager' | 'spontaneous'>('all');
+  const [styleCategory, setStyleCategory] = useState<'all' | 'porter' | 'stout' | 'ale' | 'ipa' | 'lager' | 'wheat' | 'belgian' | 'sour'>('all');
+  const [abvFilter, setAbvFilter] = useState<'all' | 'light' | 'standard' | 'strong'>('all');
+
+  // Сетевой поиск рецептов через бэкенд
+  const [isSearchingOnline, setIsSearchingOnline] = useState(false);
+  const [serverRecipes, setServerRecipes] = useState<OnlineRecipeItem[]>(ONLINE_RECIPES_CATALOG);
+  const [isLoadedFromNetwork, setIsLoadedFromNetwork] = useState(false);
 
   // Загрузка по ссылке
   const [inputUrl, setInputUrl] = useState('');
@@ -59,9 +67,49 @@ export const OnlineRecipeHubModal: React.FC<Props> = ({
   const [rawText, setRawText] = useState('');
   const [showRawPaste, setShowRawPaste] = useState(false);
 
-  // Фильтрация онлайн-рецептов
+  // Выполнение сетевого запроса к интернет-базе по заданным параметрам
+  const handleSearchOnlineByParams = async () => {
+    setIsSearchingOnline(true);
+    try {
+      const minAbv = abvFilter === 'standard' ? 4.8 : abvFilter === 'strong' ? 6.5 : undefined;
+      const maxAbv = abvFilter === 'light' ? 4.8 : abvFilter === 'standard' ? 6.5 : undefined;
+
+      const res = await fetch('/api/recipes/search-online', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: searchQuery,
+          fermentationType: fermentationFilter,
+          styleCategory,
+          minAbv,
+          maxAbv
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Array.isArray(data.recipes)) {
+          setServerRecipes(data.recipes);
+          setIsLoadedFromNetwork(true);
+        }
+      }
+    } catch (e) {
+      console.warn('Network search fallback to local:', e);
+    } finally {
+      setIsSearchingOnline(false);
+    }
+  };
+
+  // Автоматический поиск при изменении ключевых фильтров
+  useEffect(() => {
+    if (isOpen) {
+      handleSearchOnlineByParams();
+    }
+  }, [isOpen, fermentationFilter, styleCategory, abvFilter]);
+
+  // Фильтрация онлайн-рецептов (из сервера или резервного каталога)
   const filteredCatalog = useMemo(() => {
-    return ONLINE_RECIPES_CATALOG.filter(item => {
+    return serverRecipes.filter(item => {
       const q = searchQuery.toLowerCase().trim();
       const matchQuery =
         !q ||
@@ -76,15 +124,28 @@ export const OnlineRecipeHubModal: React.FC<Props> = ({
 
       if (!matchQuery) return false;
 
-      if (categoryFilter === 'clones' && !item.breweryClone) return false;
-      if (categoryFilter === 'russian' && !item.origin.includes('Россия') && !item.origin.includes('СССР')) return false;
-      if (categoryFilter === 'ipa' && !item.style.toLowerCase().includes('ipa')) return false;
-      if (categoryFilter === 'stout' && !item.style.toLowerCase().includes('stout') && !item.style.toLowerCase().includes('porter')) return false;
-      if (categoryFilter === 'lager' && !item.style.toLowerCase().includes('lager')) return false;
+      // Фильтр по типу брожения
+      if (fermentationFilter !== 'all' && (item as any).fermentationType && (item as any).fermentationType !== fermentationFilter) {
+        return false;
+      }
+
+      // Фильтр по стилю
+      if (styleCategory !== 'all') {
+        const s = item.style.toLowerCase();
+        const c = item.category.toLowerCase();
+        if (styleCategory === 'porter' && !s.includes('porter') && !c.includes('портер')) return false;
+        if (styleCategory === 'stout' && !s.includes('stout') && !c.includes('стаут')) return false;
+        if (styleCategory === 'ipa' && !s.includes('ipa')) return false;
+        if (styleCategory === 'lager' && !s.includes('lager') && !s.includes('pils') && !c.includes('лагер')) return false;
+        if (styleCategory === 'wheat' && !s.includes('weizen') && !s.includes('wheat') && !s.includes('witbier') && !c.includes('пшенич')) return false;
+        if (styleCategory === 'sour' && !s.includes('gose') && !s.includes('sour') && !c.includes('кисл')) return false;
+        if (styleCategory === 'belgian' && !c.includes('бельгийск') && !s.includes('tripel') && !s.includes('dubbel')) return false;
+        if (styleCategory === 'ale' && (item as any).fermentationType && (item as any).fermentationType !== 'ale') return false;
+      }
 
       return true;
     });
-  }, [searchQuery, categoryFilter]);
+  }, [serverRecipes, searchQuery, fermentationFilter, styleCategory]);
 
   // Загрузка рецепта по URL через backend-прокси
   const handleFetchFromUrl = async (urlToFetch?: string) => {
@@ -345,51 +406,136 @@ export const OnlineRecipeHubModal: React.FC<Props> = ({
           {/* =================== ВКЛАДКА 1: ОНЛАЙН-КАТАЛОГ =================== */}
           {activeTab === 'catalog' && (
             <div className="space-y-4">
-              {/* Поиск и категории */}
-              <div className="space-y-3">
-                <div className="relative">
-                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Поиск по сорту (напр. Guinness, Атомная Прачечная, NEIPA, Citra, Пилснер)..."
-                    className="w-full pl-10 pr-4 py-2.5 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
+              {/* Поиск и расширенные параметры */}
+              <div className="p-4 rounded-2xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200 dark:border-stone-700 space-y-3">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSearchOnlineByParams();
+                      }}
+                      placeholder="Поиск (напр. Guinness, Атомная Прачечная, Портер, Пилснер, Cascade)..."
+                      className="w-full pl-10 pr-8 py-2.5 bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm text-stone-900 dark:text-white placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSearchOnlineByParams}
+                    disabled={isSearchingOnline}
+                    className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-stone-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer shrink-0"
+                  >
+                    {isSearchingOnline ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Globe className="w-4 h-4" />
+                    )}
+                    <span>{isSearchingOnline ? 'Загрузка...' : 'Искать в сети'}</span>
+                  </button>
                 </div>
 
-                {/* Фильтры по категориям */}
-                <div className="flex flex-wrap items-center gap-1.5">
+                {/* Фильтр 1: Тип брожения */}
+                <div className="space-y-1">
+                  <div className="text-[11px] font-bold text-stone-500 dark:text-stone-400">
+                    Тип брожения:
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {[
+                      { id: 'all', label: 'Все типы' },
+                      { id: 'ale', label: '🌿 Верхнее брожение (Эли, Портеры, Стауты)' },
+                      { id: 'lager', label: '❄️ Низовое брожение (Лагеры, Пилснеры)' },
+                      { id: 'spontaneous', label: '🍇 Спонтанное (Гозе, Сауэры)' }
+                    ].map(item => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setFermentationFilter(item.id as any)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                          fermentationFilter === item.id
+                            ? 'bg-amber-500 text-white shadow-2xs font-bold'
+                            : 'bg-white dark:bg-stone-750 text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 hover:bg-stone-100'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Фильтр 2: Стиль / Категория */}
+                <div className="space-y-1">
+                  <div className="text-[11px] font-bold text-stone-500 dark:text-stone-400">
+                    Стиль пива:
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {[
+                      { id: 'all', label: 'Все стили' },
+                      { id: 'porter', label: '☕ Портеры' },
+                      { id: 'stout', label: '🍫 Стауты' },
+                      { id: 'ale', label: '🍺 Классический Эль' },
+                      { id: 'ipa', label: '🌿 IPAs & Хмель' },
+                      { id: 'lager', label: '❄️ Лагеры & Пилснеры' },
+                      { id: 'wheat', label: '🌾 Пшеничное (Вайцен)' },
+                      { id: 'belgian', label: '🇧🇪 Бельгийские эли' },
+                      { id: 'sour', label: '🍋 Кислые эли / Гозе' }
+                    ].map(st => (
+                      <button
+                        key={st.id}
+                        type="button"
+                        onClick={() => setStyleCategory(st.id as any)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                          styleCategory === st.id
+                            ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 font-bold shadow-2xs'
+                            : 'bg-white dark:bg-stone-750 text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-700 hover:bg-stone-100'
+                        }`}
+                      >
+                        {st.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Фильтр 3: Крепость (ABV) */}
+                <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-stone-200/60 dark:border-stone-700 text-xs">
+                  <span className="text-[11px] text-stone-500 dark:text-stone-400 font-medium">Крепость (ABV):</span>
                   {[
-                    { id: 'all', label: 'Все стили' },
-                    { id: 'clones', label: '⭐ Мировые клоны' },
-                    { id: 'russian', label: '🇷🇺 Российский крафт & ГОСТ' },
-                    { id: 'ipa', label: '🌿 IPAs & Хмель' },
-                    { id: 'stout', label: '☕ Стауты & Портеры' },
-                    { id: 'lager', label: '🍺 Лагеры & Пилснеры' }
-                  ].map(cat => (
+                    { id: 'all', label: 'Любая' },
+                    { id: 'light', label: 'Легкое (< 4.8%)' },
+                    { id: 'standard', label: 'Стандарт (4.8%–6.5%)' },
+                    { id: 'strong', label: 'Крепкое (> 6.5%)' }
+                  ].map(ab => (
                     <button
-                      key={cat.id}
+                      key={ab.id}
                       type="button"
-                      onClick={() => setCategoryFilter(cat.id)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                        categoryFilter === cat.id
-                          ? 'bg-amber-500 text-white shadow-xs'
-                          : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-700'
+                      onClick={() => setAbvFilter(ab.id as any)}
+                      className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors ${
+                        abvFilter === ab.id
+                          ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 font-bold border border-amber-300 dark:border-amber-700'
+                          : 'text-stone-500 hover:text-stone-800 dark:hover:text-stone-200'
                       }`}
                     >
-                      {cat.label}
+                      {ab.label}
                     </button>
                   ))}
+
+                  {/* Индикатор загрузки из сети */}
+                  <div className="ml-auto text-[11px] text-emerald-700 dark:text-emerald-400 font-medium flex items-center gap-1">
+                    <Globe className="w-3 h-3 text-emerald-600" />
+                    <span>Связь с базой активна • Найдено: <b>{filteredCatalog.length}</b></span>
+                  </div>
                 </div>
               </div>
 
@@ -437,8 +583,24 @@ export const OnlineRecipeHubModal: React.FC<Props> = ({
                                   </span>
                                 )}
                               </div>
-                              <div className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                                {item.style} • {item.origin}
+                              <div className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                                <span>{item.style}</span>
+                                <span>•</span>
+                                <span>{item.origin}</span>
+                                <span>•</span>
+                                <span className={`px-1.5 py-0.2 rounded font-bold text-[10px] ${
+                                  (item as any).fermentationType === 'lager'
+                                    ? 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300'
+                                    : (item as any).fermentationType === 'spontaneous'
+                                    ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
+                                    : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                }`}>
+                                  {(item as any).fermentationType === 'lager'
+                                    ? '❄️ Низовое брожение'
+                                    : (item as any).fermentationType === 'spontaneous'
+                                    ? '🍇 Спонтанное брожение'
+                                    : '🌿 Верхнее брожение'}
+                                </span>
                               </div>
                             </div>
                           </div>

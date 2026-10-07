@@ -18,6 +18,7 @@ import { LifehacksGuide } from './components/LifehacksGuide';
 import { CommunityFeed } from './components/CommunityFeed';
 import { PrintableBrewSheet } from './components/PrintableBrewSheet';
 import { CloudSyncModal } from './components/CloudSyncModal';
+import { NewRecipeModal } from './components/NewRecipeModal';
 
 import {
   BrewLog,
@@ -280,6 +281,7 @@ export default function App() {
   }, [globalBatchSizeL]);
 
   const [cloudModalOpen, setCloudModalOpen] = useState(false);
+  const [newRecipeModalOpen, setNewRecipeModalOpen] = useState(false);
 
   // Автосохранение всех сущностей в LocalStorage (Offline-First)
   useEffect(() => {
@@ -566,6 +568,7 @@ export default function App() {
             onSendToAiStudio={handleSendToAiStudio}
             onStartBrewBatch={handleStartBrewBatch}
             onPrintSheet={handlePrintSheet}
+            onOpenNewRecipeModal={() => setNewRecipeModalOpen(true)}
           />
         )}
 
@@ -585,7 +588,7 @@ export default function App() {
           <RecipeCatalogue
             recipes={recipes}
             onSelectRecipe={handleSelectRecipe}
-            onCreateNewRecipe={handleCreateNewRecipe}
+            onCreateNewRecipe={() => setNewRecipeModalOpen(true)}
             onAddRecipeToList={handleAddRecipeToList}
             onToggleFavorite={handleToggleFavorite}
             onSetCollection={handleSetCollection}
@@ -662,6 +665,18 @@ export default function App() {
         onRestoreFullData={handleRestoreFullData}
         syncCode={syncCode}
         setSyncCode={setSyncCode}
+      />
+
+      {/* Модальное окно создания рецепта (чистый шаблон с нуля или стиль BJCP) */}
+      <NewRecipeModal
+        isOpen={newRecipeModalOpen}
+        onClose={() => setNewRecipeModalOpen(false)}
+        onCreateRecipe={(newRecipe) => {
+          setRecipes([newRecipe, ...recipes]);
+          setCurrentRecipe(newRecipe);
+          setActiveTab('calculator');
+        }}
+        defaultBatchSizeL={globalBatchSizeL}
       />
     </div>
   );

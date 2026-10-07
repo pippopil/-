@@ -1,4 +1,4 @@
-name: Сборка Android APK (Capacitor)
+name: Сборка и Релиз (Android APK & Web)
 
 on:
   push:
@@ -9,24 +9,64 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    name: Сборка и публикация Android APK
+  build-and-release:
+    name: Сборка, инкремент версии и публикация релиза
     runs-on: ubuntu-latest
 
     steps:
       - name: Клонирование репозитория
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Определение номера сборки и версионирование
+        id: versioning
+        run: |
+          BUILD_NUM="${{ github.run_number }}"
+          BASE_VERSION=$(node -p "require('./package.json').version || '1.0.0'")
+          MAJOR_MINOR=$(echo "$BASE_VERSION" | cut -d. -f1,2)
+          FULL_VERSION="${MAJOR_MINOR}.${BUILD_NUM}"
+          TAG_NAME="v${FULL_VERSION}"
+
+          echo "BUILD_NUM=${BUILD_NUM}" >> $GITHUB_OUTPUT
+          echo "FULL_VERSION=${FULL_VERSION}" >> $GITHUB_OUTPUT
+          echo "TAG_NAME=${TAG_NAME}" >> $GITHUB_OUTPUT
+
+          echo "Сборка #${BUILD_NUM}, версия: ${FULL_VERSION}, тэг: ${TAG_NAME}"
+
+          # Обновление версии в package.json
+          npm version "${FULL_VERSION}" --no-git-tag-version --allow-same-version
+
+          # Обновление versionCode и versionName в Android build.gradle
+          if [ -f android/app/build.gradle ]; then
+            sed -i "s/versionCode [0-9]*/versionCode ${BUILD_NUM}/g" android/app/build.gradle
+            sed -i "s/versionName \".*\"/versionName \"${FULL_VERSION}\"/g" android/app/build.gradle
+            echo "Обновлен android/app/build.gradle: versionCode ${BUILD_NUM}, versionName ${FULL_VERSION}"
+          fi
 
       - name: Установка Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: 'npm'
 
       - name: Установка зависимостей проекта
-        run: npm install
+        run: npm ci || npm install
+
+      - name: Проверка типов и линтинг
+        run: npm run lint
+
+      - name: Запуск модульных тестов
+        run: npm test
 
       - name: Сборка веб-приложения (Vite Build)
         run: npm run build
+
+      - name: Упаковка Web/PWA дистрибутива в архив
+        run: |
+          cd dist
+          zip -r ../mastervarka-web-${{ steps.versioning.outputs.TAG_NAME }}.zip .
+          cd ..
 
       - name: Установка Java JDK 21
         uses: actions/setup-java@v5
@@ -35,8 +75,7 @@ jobs:
           java-version: '21'
 
       - name: Синхронизация платформы Android в Capacitor
-        run: |
-          npx cap sync android
+        run: npx cap sync android
 
       - name: Сборка Android APK через Gradle
         run: |
@@ -44,21 +83,50 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
           cd ..
-          cp android/app/build/outputs/apk/debug/app-debug.apk ./mastervarka.apk
+          APK_NAME="mastervarka-${{ steps.versioning.outputs.TAG_NAME }}.apk"
+          cp android/app/build/outputs/apk/debug/app-debug.apk ./"$APK_NAME"
+          echo "APK_NAME=${APK_NAME}" >> $GITHUB_OUTPUT
+        id: apk_build
 
-      - name: Сохранение APK в артефактах GitHub Actions
+      - name: Сохранение артефактов в GitHub Actions
         uses: actions/upload-artifact@v4
         with:
-          name: mastervarka-debug-apk
-          path: mastervarka.apk
+          name: mastervarka-artifacts-${{ steps.versioning.outputs.TAG_NAME }}
+          path: |
+            mastervarka-${{ steps.versioning.outputs.TAG_NAME }}.apk
+            mastervarka-web-${{ steps.versioning.outputs.TAG_NAME }}.zip
           if-no-files-found: error
 
-      - name: Прикрепление APK к Релизу GitHub
+      - name: Публикация нового Релиза на GitHub с инкрементом версии
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
-          tag_name: v1.0.0
-          name: "🍺 МастерВарка v1.0.0 — Официальный Релиз"
-          files: mastervarka.apk
+          tag_name: ${{ steps.versioning.outputs.TAG_NAME }}
+          name: "🍺 МастерВарка ${{ steps.versioning.outputs.TAG_NAME }} (Сборка #${{ steps.versioning.outputs.BUILD_NUM }})"
+          body: |
+            ## 🍺 Официальный релиз «МастерВарка» — ${{ steps.versioning.outputs.TAG_NAME }}
+            
+            - **Номер сборки:** #${{ steps.versioning.outputs.BUILD_NUM }}
+            - **Ветка:** `${{ github.ref_name }}`
+            - **Коммит:** `${{ github.sha }}`
+            
+            ---
+            
+            ### 📦 Файлы для скачивания:
+            1. **📱 Android APK:** `mastervarka-${{ steps.versioning.outputs.TAG_NAME }}.apk` — готовый установочный файл для Android смартфонов и планшетов.
+            2. **🌐 Web / PWA архив:** `mastervarka-web-${{ steps.versioning.outputs.TAG_NAME }}.zip` — автономный веб-бандл с поддержкой офлайн-работы.
+            
+            ### ✨ Возможности:
+            - **Чистый шаблон:** создание авторских рецептов с нуля без предустановленных ингредиентов.
+            - **Справочник BJCP:** полный перечень стилей пива с делением по брожению (верховое, низовое, спонтанное).
+            - **Поиск в интернет-базе:** фильтрация рецептов по стилю, типу брожения и крепости.
+            - **Курский солод:** подбор и пересчёт отечественных аналогов солодов и хмелей.
+            - **Водный баланс:** расчет заторной, промывочной воды и общего расхода без переполнения полей.
+          files: |
+            mastervarka-${{ steps.versioning.outputs.TAG_NAME }}.apk
+            mastervarka-web-${{ steps.versioning.outputs.TAG_NAME }}.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

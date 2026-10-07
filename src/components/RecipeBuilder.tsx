@@ -53,6 +53,7 @@ interface Props {
   onSendToAiStudio: (recipe: Recipe) => void;
   onStartBrewBatch: (recipe: Recipe) => void;
   onPrintSheet: () => void;
+  onOpenNewRecipeModal?: () => void;
 }
 
 export const RecipeBuilder: React.FC<Props> = ({
@@ -61,7 +62,8 @@ export const RecipeBuilder: React.FC<Props> = ({
   onSaveRecipe,
   onSendToAiStudio,
   onStartBrewBatch,
-  onPrintSheet
+  onPrintSheet,
+  onOpenNewRecipeModal
 }) => {
   const [scaleModalOpen, setScaleModalOpen] = useState(false);
   const [targetScaleL, setTargetScaleL] = useState(recipe.batchSizeL);
@@ -342,6 +344,18 @@ export const RecipeBuilder: React.FC<Props> = ({
 
           {/* Панель быстрых действий */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {onOpenNewRecipeModal && (
+              <button
+                type="button"
+                onClick={onOpenNewRecipeModal}
+                className="px-3.5 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                title="Создать новый рецепт с чистого листа или выбрать готовый стиль"
+              >
+                <Plus className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                <span>+ Чистый шаблон</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={handleSave}
@@ -910,21 +924,71 @@ export const RecipeBuilder: React.FC<Props> = ({
             </div>
 
             <div className="space-y-2 text-xs">
-              <div className="flex justify-between py-1 border-b border-stone-100 dark:border-stone-800">
-                <span className="text-stone-500">Вода на затирание (Strike Water):</span>
-                <span className="font-mono font-bold">{recipe.calculated.strikeWaterL} л</span>
+              {/* 1. Заторная вода (компактно, без вылезания за строку) */}
+              <div className="flex items-center justify-between py-1.5 border-b border-stone-100 dark:border-stone-800 gap-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Droplets className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span className="text-stone-600 dark:text-stone-300 font-medium truncate">Заторная вода:</span>
+                </div>
+                <span className="font-mono font-bold text-stone-900 dark:text-white shrink-0 bg-stone-100 dark:bg-stone-800 px-2 py-0.5 rounded text-xs">
+                  {recipe.calculated.strikeWaterL} л
+                </span>
               </div>
-              <div className="flex justify-between py-1 border-b border-stone-100 dark:border-stone-800">
-                <span className="text-stone-500">Промывочная вода (Sparge Water, до 78°C):</span>
-                <span className="font-mono font-bold text-sky-600 dark:text-sky-400">{recipe.calculated.spargeWaterL} л</span>
+
+              {/* 2. Промывочная вода (компактно, без вылезания за строку) */}
+              <div className="flex items-center justify-between py-1.5 border-b border-stone-100 dark:border-stone-800 gap-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Droplets className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                  <span className="text-stone-600 dark:text-stone-300 font-medium truncate">Промывочная вода (до 78°C):</span>
+                </div>
+                <span className="font-mono font-bold text-sky-600 dark:text-sky-400 shrink-0 bg-sky-50 dark:bg-sky-950/40 px-2 py-0.5 rounded border border-sky-200/50 dark:border-sky-800/50 text-xs">
+                  {recipe.calculated.spargeWaterL} л
+                </span>
               </div>
-              <div className="flex justify-between py-1 border-b border-stone-100 dark:border-stone-800">
-                <span className="text-stone-500">Общий расход воды:</span>
-                <span className="font-mono font-bold text-stone-800 dark:text-stone-200">{recipe.calculated.totalWaterL} л</span>
-              </div>
-              <div className="flex justify-between py-1">
-                <span className="text-stone-500">Впитывание зерном:</span>
-                <span className="font-mono text-stone-500">~{(recipe.calculated.totalGrainWeightKg * 0.96).toFixed(1)} л</span>
+
+              {/* 3. Красиво обыгранный итоговый расход воды */}
+              <div className="mt-3 p-3.5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-sky-500/5 to-amber-500/5 dark:from-amber-950/40 dark:via-stone-900 dark:to-sky-950/30 border border-amber-300/70 dark:border-amber-700/60 shadow-xs space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-amber-900 dark:text-amber-200 font-extrabold text-xs">
+                    <Droplets className="w-4 h-4 text-amber-500" />
+                    <span>Суммарный расход воды</span>
+                  </div>
+                  <div className="text-base font-black font-mono text-amber-800 dark:text-amber-300">
+                    {recipe.calculated.totalWaterL} л
+                  </div>
+                </div>
+
+                {/* Визуальная сегментированная шкала баланса воды */}
+                <div className="space-y-1">
+                  <div className="w-full h-2 rounded-full bg-stone-200 dark:bg-stone-700 overflow-hidden flex">
+                    <div
+                      style={{ width: `${Math.min(100, (recipe.calculated.strikeWaterL / Math.max(1, recipe.calculated.totalWaterL)) * 100)}%` }}
+                      className="bg-amber-500 h-full"
+                      title={`Заторная: ${recipe.calculated.strikeWaterL} л`}
+                    />
+                    <div
+                      style={{ width: `${Math.min(100, (recipe.calculated.spargeWaterL / Math.max(1, recipe.calculated.totalWaterL)) * 100)}%` }}
+                      className="bg-sky-500 h-full"
+                      title={`Промывочная: ${recipe.calculated.spargeWaterL} л`}
+                    />
+                  </div>
+
+                  <div className="flex justify-between items-center text-[10px] text-stone-500 dark:text-stone-400 font-medium pt-0.5">
+                    <span className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
+                      Затор {recipe.calculated.strikeWaterL} л
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-sky-500 inline-block" />
+                      Промывка {recipe.calculated.spargeWaterL} л
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-1 border-t border-amber-200/50 dark:border-stone-800 flex justify-between text-[10px] text-stone-500 dark:text-stone-400">
+                  <span>Впитывание зерном:</span>
+                  <span className="font-mono font-semibold text-stone-600 dark:text-stone-300">~{(recipe.calculated.totalGrainWeightKg * 0.96).toFixed(1)} л</span>
+                </div>
               </div>
             </div>
           </div>
@@ -980,39 +1044,41 @@ export const RecipeBuilder: React.FC<Props> = ({
                 <div className="w-6 h-6 rounded-full bg-amber-500 text-white font-bold text-xs flex items-center justify-center shrink-0">
                   {idx + 1}
                 </div>
-                <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2.5 min-w-0">
                   <input
                     type="text"
                     value={rest.name}
                     onChange={(e) => updateMashRest(rest.id, { name: e.target.value })}
-                    className="font-medium text-xs bg-transparent text-stone-900 dark:text-stone-100 focus:outline-none"
+                    className="font-medium text-xs bg-transparent text-stone-900 dark:text-stone-100 focus:outline-none flex-1 min-w-0 py-0.5 border-b border-transparent focus:border-amber-400"
                     placeholder="Название паузы..."
                   />
-                  <div className="flex items-center gap-1.5 text-xs">
-                    <span className="text-stone-400">Темп:</span>
-                    <input
-                      type="number"
-                      min="35"
-                      max="85"
-                      step="1"
-                      value={rest.tempC}
-                      onChange={(e) => updateMashRest(rest.id, { tempC: parseFloat(e.target.value) || 65 })}
-                      className="w-16 bg-white dark:bg-stone-700 border border-stone-300 dark:border-stone-600 rounded px-1.5 py-0.5 font-mono font-bold text-center"
-                    />
-                    <span className="text-stone-500 font-mono">°C</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs">
-                    <span className="text-stone-400">Время:</span>
-                    <input
-                      type="number"
-                      min="1"
-                      max="120"
-                      step="5"
-                      value={rest.timeMin}
-                      onChange={(e) => updateMashRest(rest.id, { timeMin: parseInt(e.target.value, 10) || 15 })}
-                      className="w-16 bg-white dark:bg-stone-700 border border-stone-300 dark:border-stone-600 rounded px-1.5 py-0.5 font-mono font-bold text-center"
-                    />
-                    <span className="text-stone-500 font-mono">мин</span>
+                  <div className="flex items-center gap-3 shrink-0 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-stone-400 text-[11px]">Темп:</span>
+                      <input
+                        type="number"
+                        min="35"
+                        max="85"
+                        step="1"
+                        value={rest.tempC}
+                        onChange={(e) => updateMashRest(rest.id, { tempC: parseFloat(e.target.value) || 65 })}
+                        className="w-14 bg-white dark:bg-stone-700 border border-stone-300 dark:border-stone-600 rounded px-1.5 py-0.5 font-mono font-bold text-center text-xs"
+                      />
+                      <span className="text-stone-500 font-mono text-[11px]">°C</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-stone-400 text-[11px]">Время:</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="120"
+                        step="5"
+                        value={rest.timeMin}
+                        onChange={(e) => updateMashRest(rest.id, { timeMin: parseInt(e.target.value, 10) || 15 })}
+                        className="w-14 bg-white dark:bg-stone-700 border border-stone-300 dark:border-stone-600 rounded px-1.5 py-0.5 font-mono font-bold text-center text-xs"
+                      />
+                      <span className="text-stone-500 font-mono text-[11px]">мин</span>
+                    </div>
                   </div>
                 </div>
                 <button

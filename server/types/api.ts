@@ -98,6 +98,20 @@ export interface FetchRecipeUrlRequest {
   url: string;
 }
 
+export interface SearchOnlineRecipesRequest {
+  query?: string;
+  fermentationType?: 'all' | 'ale' | 'lager' | 'spontaneous';
+  styleCategory?: 'all' | 'porter' | 'stout' | 'ale' | 'ipa' | 'lager' | 'wheat' | 'sour' | 'belgian';
+  minAbv?: number;
+  maxAbv?: number;
+}
+
+export interface SearchOnlineRecipesResponse {
+  success: boolean;
+  totalFound: number;
+  recipes: any[];
+}
+
 export interface CommunityPostItem {
   id: string;
   createdAt: string;

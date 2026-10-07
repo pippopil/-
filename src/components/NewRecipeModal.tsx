@@ -1,0 +1,612 @@
+import React, { useState, useMemo } from 'react';
+import {
+  FileText,
+  Sparkles,
+  Layers,
+  Thermometer,
+  Flame,
+  X,
+  Check,
+  Search,
+  Filter,
+  Beer,
+  ArrowRight,
+  Info
+} from 'lucide-react';
+import { Recipe } from '../types/brewing';
+import { BJCP_STYLES, calculateBrewMetrics, ebcToHex } from '../utils/brewingMath';
+import { COMMON_YEASTS } from '../data/defaultData';
+
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  onCreateRecipe: (recipe: Recipe) => void;
+  defaultBatchSizeL?: number;
+}
+
+export const NewRecipeModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  onCreateRecipe,
+  defaultBatchSizeL = 20
+}) => {
+  const [creationMode, setCreationMode] = useState<'blank' | 'style'>('blank');
+
+  // Параметры для чистого рецепта с нуля
+  const [blankName, setBlankName] = useState('Мой новый рецепт');
+  const [blankBatchSizeL, setBlankBatchSizeL] = useState(defaultBatchSizeL);
+  const [blankEfficiency, setBlankEfficiency] = useState(72);
+  const [blankBoilTime, setBlankBoilTime] = useState(60);
+
+  // Фильтры стилей BJCP
+  const [styleSearch, setStyleSearch] = useState('');
+  const [selectedFermentation, setSelectedFermentation] = useState<'all' | 'ale' | 'lager' | 'spontaneous'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedStyleId, setSelectedStyleId] = useState<string>('american_pale_ale');
+
+  const categories = useMemo(() => {
+    return Array.from(new Set(BJCP_STYLES.map(s => s.category)));
+  }, []);
+
+  const filteredStyles = useMemo(() => {
+    return BJCP_STYLES.filter(s => {
+      const matchQuery =
+        !styleSearch ||
+        s.name.toLowerCase().includes(styleSearch.toLowerCase()) ||
+        s.nameEn.toLowerCase().includes(styleSearch.toLowerCase()) ||
+        s.description.toLowerCase().includes(styleSearch.toLowerCase()) ||
+        s.category.toLowerCase().includes(styleSearch.toLowerCase());
+
+      if (!matchQuery) return false;
+
+      if (selectedFermentation !== 'all' && s.fermentationType !== selectedFermentation) {
+        return false;
+      }
+
+      if (selectedCategory !== 'all' && s.category !== selectedCategory) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [styleSearch, selectedFermentation, selectedCategory]);
+
+  const activeStyle = useMemo(() => {
+    return BJCP_STYLES.find(s => s.id === selectedStyleId) || BJCP_STYLES[0];
+  }, [selectedStyleId]);
+
+  if (!isOpen) return null;
+
+  // Создание чистого рецепта с нуля
+  const handleCreateBlank = () => {
+    const newRecipe: Recipe = {
+      id: `recipe_custom_${Date.now()}`,
+      name: blankName.trim() || 'Новый рецепт (с нуля)',
+      style: 'Авторский стиль',
+      category: 'Авторские рецепты',
+      description: 'Чистый авторский шаблон, разработанный пивоваром с нуля.',
+      author: 'Вы',
+      batchSizeL: blankBatchSizeL,
+      boilTimeMin: blankBoilTime,
+      efficiencyPercent: blankEfficiency,
+      grainRatioLPerKg: 3.5,
+      grainTempC: 20,
+      targetCarbonationVol: 2.4,
+      beerTempAtBottlingC: 19,
+      grains: [
+        {
+          id: `grain_${Date.now()}_1`,
+          name: 'Светлый базовый солод (Pale / Pilsner)',
+          weightKg: Number(((blankBatchSizeL * 0.22)).toFixed(1)), // ~4.4 кг на 20 л
+          potentialSg: 1.038,
+          colorEbc: 4.5,
+          type: 'base'
+        }
+      ],
+      hops: [
+        {
+          id: `hop_${Date.now()}_1`,
+          name: 'Хмель на горечь (напр. Magnum / Tradition)',
+          weightG: 20,
+          alphaAcid: 12.0,
+          boilTimeMin: blankBoilTime,
+          use: 'boil'
+        }
+      ],
+      mashSchedule: [
+        {
+          id: 'rest_1',
+          name: 'Осахаривание (Универсальная пауза)',
+          tempC: 66,
+          timeMin: 60,
+          type: 'maltose'
+        },
+        {
+          id: 'rest_2',
+          name: 'Мэшаут',
+          tempC: 78,
+          timeMin: 10,
+          type: 'mashout'
+        }
+      ],
+      yeast: {
+        name: 'SafAle US-05',
+        lab: 'Fermentis',
+        form: 'dry',
+        type: 'ale',
+        cellsPerGramOrVial: 20,
+        attenuationPercent: 80,
+        tempRange: [18, 24],
+        styleDescription: 'Универсальные элевые дрожжи с нейтральным чистым профилем'
+      },
+      calculated: {} as any,
+      tags: ['Чистый шаблон', 'С нуля', 'Авторский'],
+      isCustom: true,
+      collection: 'my_recipes',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    newRecipe.calculated = calculateBrewMetrics({
+      batchSizeL: newRecipe.batchSizeL,
+      boilTimeMin: newRecipe.boilTimeMin,
+      efficiencyPercent: newRecipe.efficiencyPercent,
+      grainRatioLPerKg: newRecipe.grainRatioLPerKg,
+      grainTempC: newRecipe.grainTempC,
+      targetCarbonationVol: newRecipe.targetCarbonationVol,
+      beerTempAtBottlingC: newRecipe.beerTempAtBottlingC,
+      grains: newRecipe.grains,
+      hops: newRecipe.hops,
+      yeast: newRecipe.yeast
+    });
+
+    onCreateRecipe(newRecipe);
+    onClose();
+  };
+
+  // Создание рецепта на основе выбранного стиля BJCP
+  const handleCreateFromStyle = () => {
+    if (!activeStyle) return;
+
+    // Подбираем дрожжи в зависимости от типа брожения стиля
+    let yeastChoice = COMMON_YEASTS[0]; // SafAle US-05
+    if (activeStyle.fermentationType === 'lager') {
+      const lagerYeast = COMMON_YEASTS.find(y => y.type === 'lager');
+      if (lagerYeast) yeastChoice = lagerYeast;
+    } else if (activeStyle.category.includes('Пшенич')) {
+      const wheatYeast = COMMON_YEASTS.find(y => y.type === 'wheat');
+      if (wheatYeast) yeastChoice = wheatYeast;
+    } else if (activeStyle.category.includes('Бельгий')) {
+      const belgianYeast = COMMON_YEASTS.find(y => y.type === 'belgian');
+      if (belgianYeast) yeastChoice = belgianYeast;
+    }
+
+    // Рассчитываем ориентировочный базовый вес засыпи для целевой плотности стиля
+    const targetOg = (activeStyle.ogRange[0] + activeStyle.ogRange[1]) / 2;
+    const targetPoints = (targetOg - 1.0) * 1000;
+    const estGrainWeight = Math.max(3.5, Number(((targetPoints * blankBatchSizeL * 0.264172) / (37 * (blankEfficiency / 100) * 2.20462)).toFixed(1)));
+
+    // Подбираем базовый солод в соответствии со стилем
+    let baseMaltName = 'Pale Ale Malt';
+    let baseColor = 5.5;
+    if (activeStyle.fermentationType === 'lager' || activeStyle.name.includes('Пилснер')) {
+      baseMaltName = 'Pilsner Malt';
+      baseColor = 3.5;
+    } else if (activeStyle.name.includes('Мюнхен') || activeStyle.name.includes('Дункель')) {
+      baseMaltName = 'Munich Malt I';
+      baseColor = 15.0;
+    } else if (activeStyle.name.includes('Венский')) {
+      baseMaltName = 'Vienna Malt';
+      baseColor = 8.0;
+    }
+
+    const newRecipe: Recipe = {
+      id: `recipe_bjcp_${activeStyle.id}_${Date.now()}`,
+      name: `${activeStyle.name} (Шаблон)`,
+      style: activeStyle.name,
+      category: activeStyle.category,
+      description: activeStyle.description,
+      author: 'Вы (по стилю BJCP)',
+      batchSizeL: blankBatchSizeL,
+      boilTimeMin: activeStyle.fermentationType === 'lager' ? 75 : 60,
+      efficiencyPercent: blankEfficiency,
+      grainRatioLPerKg: 3.5,
+      grainTempC: 20,
+      targetCarbonationVol: activeStyle.category.includes('Пшенич') ? 2.8 : 2.4,
+      beerTempAtBottlingC: activeStyle.fermentationType === 'lager' ? 12 : 19,
+      grains: [
+        {
+          id: `grain_${Date.now()}_1`,
+          name: baseMaltName,
+          weightKg: estGrainWeight,
+          potentialSg: 1.038,
+          colorEbc: baseColor,
+          type: 'base'
+        }
+      ],
+      hops: [
+        {
+          id: `hop_${Date.now()}_1`,
+          name: activeStyle.fermentationType === 'lager' ? 'Saaz (Жатецкий)' : 'Magnum',
+          weightG: activeStyle.fermentationType === 'lager' ? 30 : 20,
+          alphaAcid: activeStyle.fermentationType === 'lager' ? 3.8 : 13.0,
+          boilTimeMin: 60,
+          use: 'boil'
+        }
+      ],
+      mashSchedule: [
+        {
+          id: 'rest_1',
+          name: activeStyle.fermentationType === 'lager' ? 'Мальтозная пауза' : 'Осахаривание',
+          tempC: activeStyle.fermentationType === 'lager' ? 63 : 66,
+          timeMin: activeStyle.fermentationType === 'lager' ? 45 : 60,
+          type: 'maltose'
+        },
+        {
+          id: 'rest_2',
+          name: 'Мэшаут',
+          tempC: 78,
+          timeMin: 10,
+          type: 'mashout'
+        }
+      ],
+      yeast: yeastChoice,
+      calculated: {} as any,
+      tags: [activeStyle.category, activeStyle.fermentationType === 'lager' ? 'Низовое брожение' : 'Верховое брожение', 'BJCP'],
+      isCustom: true,
+      collection: 'my_recipes',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    newRecipe.calculated = calculateBrewMetrics({
+      batchSizeL: newRecipe.batchSizeL,
+      boilTimeMin: newRecipe.boilTimeMin,
+      efficiencyPercent: newRecipe.efficiencyPercent,
+      grainRatioLPerKg: newRecipe.grainRatioLPerKg,
+      grainTempC: newRecipe.grainTempC,
+      targetCarbonationVol: newRecipe.targetCarbonationVol,
+      beerTempAtBottlingC: newRecipe.beerTempAtBottlingC,
+      grains: newRecipe.grains,
+      hops: newRecipe.hops,
+      yeast: newRecipe.yeast
+    });
+
+    onCreateRecipe(newRecipe);
+    onClose();
+  };
+
+  return (
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="no-print fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 overscroll-contain animate-in fade-in duration-150"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-3xl max-h-[92dvh] bg-white dark:bg-stone-900 rounded-3xl border border-stone-200 dark:border-stone-800 shadow-2xl flex flex-col overflow-hidden relative"
+      >
+        {/* Шапка модального окна */}
+        <div className="p-4 sm:p-5 border-b border-stone-200 dark:border-stone-800 bg-amber-500/5 dark:bg-amber-500/10 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-sm shadow-amber-500/30 shrink-0">
+              <Beer className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base sm:text-lg font-black text-stone-900 dark:text-white leading-tight">
+                Создание Нового Рецепта
+              </h2>
+              <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+                Чистый шаблон для авторской варки или выбор из полного справочника стилей
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-xl text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Выбор режима создания: Чистый шаблон VS По стилю BJCP */}
+        <div className="flex border-b border-stone-200 dark:border-stone-800 bg-stone-50/70 dark:bg-stone-800/40 p-1.5 gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => setCreationMode('blank')}
+            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              creationMode === 'blank'
+                ? 'bg-white dark:bg-stone-850 text-amber-600 dark:text-amber-400 shadow-xs border border-stone-200/80 dark:border-stone-700'
+                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            <span>Чистый шаблон (с нуля)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setCreationMode('style')}
+            className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              creationMode === 'style'
+                ? 'bg-white dark:bg-stone-850 text-amber-600 dark:text-amber-400 shadow-xs border border-stone-200/80 dark:border-stone-700'
+                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-200'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Выбрать стиль (все стили BJCP)</span>
+          </button>
+        </div>
+
+        {/* Тело модального окна */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+          {/* ============= РЕЖИМ 1: ЧИСТЫЙ ШАБЛОН ============= */}
+          {creationMode === 'blank' && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-950 dark:text-amber-200 space-y-1">
+                <div className="font-bold flex items-center gap-1.5 text-amber-900 dark:text-amber-300">
+                  <Info className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Полный контроль над засыпью и охмелением</span>
+                </div>
+                <p className="text-[11px] text-stone-600 dark:text-stone-300">
+                  Создается чистый лист без лишних коммерческих солодов и хмелей. Вы добавляете только те сорта, которые реально планируете использовать в варке.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                    Название рецепта:
+                  </label>
+                  <input
+                    type="text"
+                    value={blankName}
+                    onChange={(e) => setBlankName(e.target.value)}
+                    placeholder="Например: Мой первый IPA, Сухой стаут на овсе..."
+                    className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-stone-500 dark:text-stone-400 block mb-1">
+                      Объем варки (литры):
+                    </label>
+                    <input
+                      type="number"
+                      min="5"
+                      max="1000"
+                      value={blankBatchSizeL}
+                      onChange={(e) => setBlankBatchSizeL(Math.max(1, parseFloat(e.target.value) || 20))}
+                      className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-3 py-2 text-sm font-mono font-bold text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-stone-500 dark:text-stone-400 block mb-1">
+                      Эффективность варочника (%):
+                    </label>
+                    <input
+                      type="number"
+                      min="40"
+                      max="95"
+                      value={blankEfficiency}
+                      onChange={(e) => setBlankEfficiency(Math.max(40, Math.min(95, parseFloat(e.target.value) || 72)))}
+                      className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-3 py-2 text-sm font-mono font-bold text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-stone-500 dark:text-stone-400 block mb-1">
+                      Время кипячения (мин):
+                    </label>
+                    <input
+                      type="number"
+                      min="30"
+                      max="180"
+                      step="5"
+                      value={blankBoilTime}
+                      onChange={(e) => setBlankBoilTime(Math.max(30, parseInt(e.target.value, 10) || 60))}
+                      className="w-full bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl px-3 py-2 text-sm font-mono font-bold text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={handleCreateBlank}
+                  className="w-full py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-black text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>Открыть чистый рецепт в калькуляторе</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ============= РЕЖИМ 2: ВЫБОР СТИЛЯ BJCP ============= */}
+          {creationMode === 'style' && (
+            <div className="space-y-4">
+              {/* Фильтры стилей: тип брожения + категория + поиск */}
+              <div className="space-y-2.5">
+                <div className="relative">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                  <input
+                    type="text"
+                    value={styleSearch}
+                    onChange={(e) => setStyleSearch(e.target.value)}
+                    placeholder="Поиск по стилю (напр. Портер, Пилснер, NEIPA, Вайцен, Стаут)..."
+                    className="w-full pl-9 pr-3 py-2 bg-stone-50 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                  {styleSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setStyleSearch('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 text-xs"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* Табы типа брожения */}
+                <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                  <span className="text-stone-400 text-[11px] mr-1">Брожение:</span>
+                  {[
+                    { id: 'all', label: 'Все' },
+                    { id: 'ale', label: '🌿 Верхнее (Эли)' },
+                    { id: 'lager', label: '❄️ Низовое (Лагеры)' },
+                    { id: 'spontaneous', label: '🍇 Спонтанное / Дикое' }
+                  ].map(item => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setSelectedFermentation(item.id as any)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        selectedFermentation === item.id
+                          ? 'bg-amber-500 text-white shadow-2xs'
+                          : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 hover:bg-stone-200'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Фильтр категорий */}
+                <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                  <span className="text-stone-400 text-[11px] mr-1">Категория:</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategory('all')}
+                    className={`px-2 py-0.5 rounded-lg text-[11px] font-medium transition-all ${
+                      selectedCategory === 'all'
+                        ? 'bg-stone-800 dark:bg-stone-200 text-white dark:text-stone-900 font-bold'
+                        : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
+                    }`}
+                  >
+                    Все
+                  </button>
+                  {categories.map(cat => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`px-2 py-0.5 rounded-lg text-[11px] font-medium transition-all ${
+                        selectedCategory === cat
+                          ? 'bg-stone-800 dark:bg-stone-200 text-white dark:text-stone-900 font-bold'
+                          : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-400'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Список найденных стилей BJCP */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
+                {filteredStyles.map(s => {
+                  const isSelected = s.id === selectedStyleId;
+                  const ebcAvg = (s.ebcRange[0] + s.ebcRange[1]) / 2;
+                  const hexColor = ebcToHex(ebcAvg);
+
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setSelectedStyleId(s.id)}
+                      className={`p-3 rounded-xl border text-left transition-all flex items-start gap-2.5 cursor-pointer ${
+                        isSelected
+                          ? 'border-amber-500 bg-amber-50/60 dark:bg-amber-950/40 shadow-xs ring-1 ring-amber-500'
+                          : 'border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-800/60 hover:border-amber-300'
+                      }`}
+                    >
+                      <div
+                        className="w-7 h-7 rounded-lg shrink-0 shadow-2xs border border-white/40 flex items-center justify-center mt-0.5"
+                        style={{ backgroundColor: hexColor }}
+                      >
+                        <Beer className="w-3.5 h-3.5 text-white/90 drop-shadow-xs" />
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="font-extrabold text-xs text-stone-900 dark:text-white leading-tight truncate">
+                          {s.name}
+                        </div>
+                        <div className="text-[10px] text-stone-500 dark:text-stone-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                          <span>{s.category}</span>
+                          <span>•</span>
+                          <span className="font-mono">{s.abvRange[0]}–{s.abvRange[1]}%</span>
+                          <span>•</span>
+                          <span className="font-mono">{s.ibuRange[0]}–{s.ibuRange[1]} IBU</span>
+                        </div>
+                      </div>
+
+                      {isSelected && (
+                        <Check className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Карточка выбранного стиля с описанием и кнопкой создания */}
+              {activeStyle && (
+                <div className="p-4 rounded-2xl bg-stone-50 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700 space-y-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
+                        Выбранный стиль BJCP:
+                      </div>
+                      <div className="text-sm font-black text-stone-900 dark:text-white">
+                        {activeStyle.name} ({activeStyle.nameEn})
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 shrink-0">
+                      {activeStyle.fermentationType === 'lager' ? 'Низовое (Лагер)' : 'Верховое (Эль)'}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-stone-600 dark:text-stone-300">
+                    {activeStyle.description}
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono text-stone-700 dark:text-stone-300 pt-1">
+                    <span className="px-2 py-0.5 rounded bg-white dark:bg-stone-700 border border-stone-200 dark:border-stone-600">
+                      НП: {activeStyle.ogRange[0].toFixed(3)}–{activeStyle.ogRange[1].toFixed(3)}
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-white dark:bg-stone-700 border border-stone-200 dark:border-stone-600">
+                      ABV: {activeStyle.abvRange[0]}–{activeStyle.abvRange[1]}%
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-white dark:bg-stone-700 border border-stone-200 dark:border-stone-600">
+                      Горечь: {activeStyle.ibuRange[0]}–{activeStyle.ibuRange[1]} IBU
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-white dark:bg-stone-700 border border-stone-200 dark:border-stone-600">
+                      Цвет: {activeStyle.ebcRange[0]}–{activeStyle.ebcRange[1]} EBC
+                    </span>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={handleCreateFromStyle}
+                      className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      <span>Создать рецепт по стилю «{activeStyle.name}»</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
