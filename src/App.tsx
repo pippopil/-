@@ -19,6 +19,7 @@ import { CommunityFeed } from './components/CommunityFeed';
 import { PrintableBrewSheet } from './components/PrintableBrewSheet';
 import { CloudSyncModal } from './components/CloudSyncModal';
 import { NewRecipeModal } from './components/NewRecipeModal';
+import { BrewingHistoryModal } from './components/BrewingHistoryModal';
 
 import {
   BrewLog,
@@ -282,6 +283,13 @@ export default function App() {
 
   const [cloudModalOpen, setCloudModalOpen] = useState(false);
   const [newRecipeModalOpen, setNewRecipeModalOpen] = useState(false);
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [historyInitialMomentId, setHistoryInitialMomentId] = useState<string | undefined>(undefined);
+
+  const handleOpenHistory = (momentId?: string) => {
+    setHistoryInitialMomentId(momentId);
+    setHistoryModalOpen(true);
+  };
 
   // Автосохранение всех сущностей в LocalStorage (Offline-First)
   useEffect(() => {
@@ -553,6 +561,7 @@ export default function App() {
         activeBatchesCount={activeBatchesCount}
         globalBatchSizeL={globalBatchSizeL}
         onSetGlobalBatchSizeL={setGlobalBatchSizeL}
+        onOpenHistory={() => handleOpenHistory()}
       />
 
       {/* Основной контент */}
@@ -569,6 +578,7 @@ export default function App() {
             onStartBrewBatch={handleStartBrewBatch}
             onPrintSheet={handlePrintSheet}
             onOpenNewRecipeModal={() => setNewRecipeModalOpen(true)}
+            onOpenHistory={handleOpenHistory}
           />
         )}
 
@@ -602,6 +612,7 @@ export default function App() {
               setTimeout(() => window.print(), 100);
             }}
             onStartBrewBatch={handleStartBrewBatch}
+            onOpenHistory={handleOpenHistory}
           />
         )}
 
@@ -636,6 +647,7 @@ export default function App() {
           <LifehacksGuide
             lifehacks={lifehacks}
             onUpdateLifehacks={setLifehacks}
+            onOpenHistory={handleOpenHistory}
           />
         )}
 
@@ -677,6 +689,13 @@ export default function App() {
           setActiveTab('calculator');
         }}
         defaultBatchSizeL={globalBatchSizeL}
+      />
+
+      {/* Модальное окно истории пивоварения и первоисточников */}
+      <BrewingHistoryModal
+        isOpen={historyModalOpen}
+        onClose={() => setHistoryModalOpen(false)}
+        initialMomentId={historyInitialMomentId}
       />
     </div>
   );

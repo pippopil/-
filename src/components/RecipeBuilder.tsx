@@ -46,6 +46,7 @@ import {
   Search
 } from 'lucide-react';
 import { SafeNumberInput } from './SafeNumberInput';
+import { BrewingHistoryCallout } from './BrewingHistoryCallout';
 
 interface Props {
   recipe: Recipe;
@@ -55,6 +56,7 @@ interface Props {
   onStartBrewBatch: (recipe: Recipe) => void;
   onPrintSheet: () => void;
   onOpenNewRecipeModal?: () => void;
+  onOpenHistory?: (momentId?: string) => void;
 }
 
 export const RecipeBuilder: React.FC<Props> = ({
@@ -64,7 +66,8 @@ export const RecipeBuilder: React.FC<Props> = ({
   onSendToAiStudio,
   onStartBrewBatch,
   onPrintSheet,
-  onOpenNewRecipeModal
+  onOpenNewRecipeModal,
+  onOpenHistory
 }) => {
   const [scaleModalOpen, setScaleModalOpen] = useState(false);
   const [targetScaleL, setTargetScaleL] = useState(recipe.batchSizeL);
@@ -505,6 +508,12 @@ export const RecipeBuilder: React.FC<Props> = ({
           </div>
         </div>
       </div>
+
+      {/* Историческая справка и первоисточники стилей */}
+      <BrewingHistoryCallout
+        currentStyleName={recipe.style}
+        onOpenFullHistory={(momentId) => onOpenHistory?.(momentId)}
+      />
 
       {/* Интерактивный дашборд характеристик и визуализатор бокала */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">

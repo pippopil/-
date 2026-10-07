@@ -26,6 +26,7 @@ import {
   Link as LinkIcon
 } from 'lucide-react';
 import { OnlineRecipeHubModal } from './OnlineRecipeHubModal';
+import { BrewingHistoryCallout } from './BrewingHistoryCallout';
 
 interface Props {
   recipes: Recipe[];
@@ -38,6 +39,7 @@ interface Props {
   onExportBeerXml: (recipe: Recipe) => void;
   onPrintRecipe: (recipe: Recipe) => void;
   onStartBrewBatch: (recipe: Recipe) => void;
+  onOpenHistory?: (momentId?: string) => void;
 }
 
 export const RecipeCatalogue: React.FC<Props> = ({
@@ -50,7 +52,8 @@ export const RecipeCatalogue: React.FC<Props> = ({
   onDeleteRecipe,
   onExportBeerXml,
   onPrintRecipe,
-  onStartBrewBatch
+  onStartBrewBatch,
+  onOpenHistory
 }) => {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
@@ -146,6 +149,16 @@ export const RecipeCatalogue: React.FC<Props> = ({
 
             <button
               type="button"
+              onClick={() => onOpenHistory?.()}
+              className="px-3.5 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              title="Хроника и исторические первоисточники стилей пивоварения"
+            >
+              <span>📜</span>
+              <span>История и источники</span>
+            </button>
+
+            <button
+              type="button"
               onClick={onCreateNewRecipe}
               className="px-4 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
             >
@@ -230,6 +243,11 @@ export const RecipeCatalogue: React.FC<Props> = ({
           </div>
         )}
       </div>
+
+      {/* Историческая справка и первоисточники */}
+      <BrewingHistoryCallout
+        onOpenFullHistory={(momentId) => onOpenHistory?.(momentId)}
+      />
 
       {/* Сетка рецептов */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

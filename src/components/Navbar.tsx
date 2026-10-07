@@ -45,6 +45,7 @@ interface Props {
   activeBatchesCount: number;
   globalBatchSizeL: number;
   onSetGlobalBatchSizeL: (sizeL: number) => void;
+  onOpenHistory?: () => void;
 }
 
 export const Navbar: React.FC<Props> = ({
@@ -58,7 +59,8 @@ export const Navbar: React.FC<Props> = ({
   isOffline,
   activeBatchesCount,
   globalBatchSizeL,
-  onSetGlobalBatchSizeL
+  onSetGlobalBatchSizeL,
+  onOpenHistory
 }) => {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
@@ -188,6 +190,17 @@ export const Navbar: React.FC<Props> = ({
               >
                 <Printer className="w-4 h-4 text-stone-600 dark:text-stone-400" />
                 <span className="hidden xl:inline">PDF</span>
+              </button>
+
+              {/* Хроника и первоисточники */}
+              <button
+                type="button"
+                onClick={onOpenHistory}
+                title="Хроника и первоисточники пивоварения (исторические ссылки и моменты)"
+                className="p-2 rounded-xl text-stone-700 hover:text-amber-700 hover:bg-amber-50/70 dark:text-stone-300 dark:hover:text-amber-400 dark:hover:bg-stone-800 transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+              >
+                <span className="text-sm">📜</span>
+                <span className="hidden xl:inline">Хроника</span>
               </button>
 
               {/* Переключатель световой темы */}
@@ -434,6 +447,15 @@ export const Navbar: React.FC<Props> = ({
               </div>
 
               <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setMobileDrawerOpen(false); onOpenHistory?.(); }}
+                  className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-900 text-xs font-semibold flex items-center justify-center gap-1.5 col-span-2 cursor-pointer"
+                >
+                  <span className="text-sm">📜</span>
+                  <span>Хроника пивоварения и первоисточники</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => { setMobileDrawerOpen(false); onOpenCloudSync(); }}

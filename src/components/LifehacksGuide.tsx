@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Lifehack } from '../types/brewing';
+import { BrewingHistoryCallout } from './BrewingHistoryCallout';
 import {
   Lightbulb,
   ThumbsUp,
@@ -16,9 +17,10 @@ import {
 interface Props {
   lifehacks: Lifehack[];
   onUpdateLifehacks: (lhs: Lifehack[]) => void;
+  onOpenHistory?: (momentId?: string) => void;
 }
 
-export const LifehacksGuide: React.FC<Props> = ({ lifehacks, onUpdateLifehacks }) => {
+export const LifehacksGuide: React.FC<Props> = ({ lifehacks, onUpdateLifehacks, onOpenHistory }) => {
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -103,13 +105,25 @@ export const LifehacksGuide: React.FC<Props> = ({ lifehacks, onUpdateLifehacks }
             </p>
           </div>
 
-          <button
-            onClick={() => setModalOpen(true)}
-            className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm shadow-amber-500/20 transition-all self-start sm:self-auto"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Поделиться лайфхаком</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => onOpenHistory?.()}
+              className="px-3.5 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              title="Хроника и исторические первоисточники пивоварения"
+            >
+              <span>📜</span>
+              <span>История и источники</span>
+            </button>
+
+            <button
+              onClick={() => setModalOpen(true)}
+              className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm shadow-amber-500/20 transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Поделиться лайфхаком</span>
+            </button>
+          </div>
         </div>
 
         {/* Категории и поиск */}
@@ -142,6 +156,11 @@ export const LifehacksGuide: React.FC<Props> = ({ lifehacks, onUpdateLifehacks }
           </div>
         </div>
       </div>
+
+      {/* Исторические вехи и первоисточники пивоваренной мудрости */}
+      <BrewingHistoryCallout
+        onOpenFullHistory={(momentId) => onOpenHistory?.(momentId)}
+      />
 
       {/* Сетка карточек лайфхаков */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
