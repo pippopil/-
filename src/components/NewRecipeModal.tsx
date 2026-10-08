@@ -30,20 +30,20 @@ export const NewRecipeModal: React.FC<Props> = ({
   isOpen,
   onClose,
   onCreateRecipe,
-  defaultBatchSizeL = 20
+  defaultBatchSizeL = 30
 }) => {
   const [creationMode, setCreationMode] = useState<'blank' | 'style'>('blank');
 
   // Параметры для чистого рецепта с нуля (храним строкой для свободного ввода без блокировки)
   const [blankName, setBlankName] = useState('Мой новый рецепт');
-  const [blankBatchSizeL, setBlankBatchSizeL] = useState<string>(String(defaultBatchSizeL || 20));
+  const [blankBatchSizeL, setBlankBatchSizeL] = useState<string>(String(defaultBatchSizeL || 30));
   const [blankEfficiency, setBlankEfficiency] = useState<string>('72');
   const [blankBoilTime, setBlankBoilTime] = useState<string>('60');
 
   // Синхронизируем начальные значения при открытии окна
   useEffect(() => {
     if (isOpen) {
-      setBlankBatchSizeL(String(defaultBatchSizeL || 20));
+      setBlankBatchSizeL(String(defaultBatchSizeL || 30));
       setBlankEfficiency('72');
       setBlankBoilTime('60');
     }
@@ -90,7 +90,7 @@ export const NewRecipeModal: React.FC<Props> = ({
 
   // Создание чистого рецепта с нуля
   const handleCreateBlank = () => {
-    const finalBatchSizeL = Math.max(1, Math.min(1000, parseFloat(blankBatchSizeL) || 20));
+    const finalBatchSizeL = Math.max(1, Math.min(1000, parseFloat(blankBatchSizeL) || 30));
     const finalEfficiency = Math.max(40, Math.min(95, parseFloat(blankEfficiency) || 72));
     const finalBoilTime = Math.max(30, Math.min(180, parseInt(blankBoilTime, 10) || 60));
 
@@ -112,7 +112,7 @@ export const NewRecipeModal: React.FC<Props> = ({
         {
           id: `grain_${Date.now()}_1`,
           name: 'Светлый базовый солод (Pale / Pilsner)',
-          weightKg: Number(((finalBatchSizeL * 0.22)).toFixed(1)), // ~4.4 кг на 20 л
+          weightKg: Number(((finalBatchSizeL * 0.22)).toFixed(1)), // ~6.6 кг на 30 л
           potentialSg: 1.038,
           colorEbc: 4.5,
           type: 'base'
@@ -197,12 +197,12 @@ export const NewRecipeModal: React.FC<Props> = ({
     }
 
     // Рассчитываем ориентировочный базовый вес засыпи для целевой плотности стиля
-    const finalBatchSizeL = Math.max(1, Math.min(1000, parseFloat(blankBatchSizeL) || 20));
+    const finalBatchSizeL = Math.max(1, Math.min(1000, parseFloat(blankBatchSizeL) || 30));
     const finalEfficiency = Math.max(40, Math.min(95, parseFloat(blankEfficiency) || 72));
 
     const targetOg = (activeStyle.ogRange[0] + activeStyle.ogRange[1]) / 2;
     const targetPoints = (targetOg - 1.0) * 1000;
-    const estGrainWeight = Math.max(3.5, Number(((targetPoints * finalBatchSizeL * 0.264172) / (37 * (finalEfficiency / 100) * 2.20462)).toFixed(1)));
+    const estGrainWeight = Math.max(4.5, Number(((targetPoints * finalBatchSizeL * 0.264172) / (37 * (finalEfficiency / 100) * 2.20462)).toFixed(1)));
 
     // Подбираем базовый солод в соответствии со стилем
     let baseMaltName = 'Pale Ale Malt';

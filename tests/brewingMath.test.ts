@@ -472,4 +472,73 @@ describe('Brewing Math Unit Tests (Калькулятор МастерВарка
       expect(changesSummary.some(s => s.includes('Горечь'))).toBe(true);
     });
   });
+
+  describe('Kursk malt substitutions & type corrections', () => {
+    it('correctly maps specialty and caramel malts without confusing them with base malts', async () => {
+      const { getKurskMaltSubstitute, normalizeGrain, isKurskMalt } = await import('../src/utils/brewingSubstitutions');
+
+      // 1. Carapils / Карапилс must map to caramel/dessert malt, NEVER to base Pilsner
+      const carapilsSub = getKurskMaltSubstitute('Carapils / Carafoam (Карапилс для пены)', 'caramel', 4.5);
+      expect(carapilsSub).not.toBeNull();
+      expect(carapilsSub?.kurskName).toContain('Десертный');
+      expect(carapilsSub?.type).toBe('caramel');
+
+      // 2. Caramunich / Карамюнхен must map to Caramel 150, NEVER to base Munich
+      const caramunichSub = getKurskMaltSubstitute('Caramunich II (Карамюнхен 120 EBC)', 'caramel', 120);
+      expect(caramunichSub).not.toBeNull();
+      expect(caramunichSub?.kurskName).toContain('Карамельный 150');
+      expect(caramunichSub?.type).toBe('caramel');
+
+      // 3. Base Munich must map to base Munich
+      const munichSub = getKurskMaltSubstitute('Munich I (Мюнхенский светлый 15 EBC)', 'base', 15);
+      expect(munichSub).not.toBeNull();
+      expect(munichSub?.kurskName).toContain('Мюнхенский');
+      expect(munichSub?.type).toBe('base');
+
+      // 4. Base Pilsner must map to base Pilsner
+      const pilsnerSub = getKurskMaltSubstitute('Pilsner Malt (Пилснер)', 'base', 3.5);
+      expect(pilsnerSub).not.toBeNull();
+      expect(pilsnerSub?.kurskName).toContain('Пилснер');
+      expect(pilsnerSub?.type).toBe('base');
+
+      // 5. Crystal must map to Shato Crystal 150 EBC, NEVER to an ambiguous placeholder
+      const crystalSub = getKurskMaltSubstitute('Crystal 150 EBC', 'caramel', 150);
+      expect(crystalSub).not.toBeNull();
+      expect(crystalSub?.kurskName).toContain('Кристалл');
+      expect(crystalSub?.type).toBe('caramel');
+      expect(crystalSub?.kurskName).not.toContain('по цветности');
+
+      // 6. Flaked Barley must map to adjunct, not placeholder
+      const barleySub = getKurskMaltSubstitute('Flaked Barley (Ячменные хлопья)', 'adjunct', 3.5);
+      expect(barleySub).not.toBeNull();
+      expect(barleySub?.type).toBe('adjunct');
+      expect(barleySub?.kurskName).not.toContain('по цветности');
+
+      // 7. isKurskMalt rejects broken placeholder
+      expect(isKurskMalt('Курский солод (по цветности EBC)')).toBe(false);
+      expect(isKurskMalt('Курский Пилснер (Pilsner Malt)')).toBe(true);
+
+      // 8. normalizeGrain auto-heals mismatched types
+      const misclassifiedPilsner = normalizeGrain({
+        id: 'g1',
+        name: 'Курский Пилснер (Pilsner Malt)',
+        weightKg: 4.5,
+        potentialSg: 1.037,
+        colorEbc: 3.8,
+        type: 'caramel' as any
+      });
+      expect(misclassifiedPilsner.type).toBe('base');
+
+      const placeholderGrain = normalizeGrain({
+        id: 'g2',
+        name: 'Курский солод (по цветности EBC)',
+        weightKg: 0.5,
+        potentialSg: 1.037,
+        colorEbc: 150,
+        type: 'caramel'
+      });
+      expect(placeholderGrain.name).toContain('Кристалл');
+      expect(placeholderGrain.type).toBe('caramel');
+    });
+  });
 });

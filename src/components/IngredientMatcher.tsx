@@ -163,7 +163,7 @@ export const IngredientMatcher: React.FC<Props> = ({
   const matchResults: Array<RecipeMatchResult & { scaledRecipe: Recipe; missingCount: number }> = useMemo(() => {
     return recipes.map(recipe => {
       // Масштабируем рецепт под желаемый объем партии
-      const scaleRatio = globalBatchSizeL / (recipe.batchSizeL || 20);
+      const scaleRatio = globalBatchSizeL / (recipe.batchSizeL || 30);
       const { scaledGrains, scaledHops } = scaleRecipeIngredients(
         recipe.grains,
         recipe.hops,

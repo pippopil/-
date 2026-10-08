@@ -1,3 +1,5 @@
+import { GrainItem, GrainType } from '../types/brewing';
+
 /**
  * Справочник и алгоритмы подбора аналогов:
  * 1. Замена импортных солодов (Weyermann, Castle, Simpsons, Crisp, Dingemans, Briess и др.) на доступный Курский солод.
@@ -12,6 +14,7 @@ export interface KurskSubstituteInfo {
   description: string;
   tip?: string;
   isExactMatch?: boolean;
+  type: GrainType;
 }
 
 export interface HopAlternativeInfo {
@@ -63,6 +66,7 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
     potentialSg: 1.037,
     colorEbc: 3.8,
     ratio: 1.0,
+    type: 'base',
     description: 'Прямая замена 1:1 импортному Pilsner (Weyermann, Castle, BestMalz). Чистый солодовый профиль, отличная экстрактивность.',
     tip: 'Рекомендуется выдержать белковую паузу 52-54°C (10-15 мин) для идеальной прозрачности сусла.',
     isExactMatch: true
@@ -72,6 +76,7 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
     potentialSg: 1.037,
     colorEbc: 3.8,
     ratio: 1.0,
+    type: 'base',
     description: 'Прямая замена 1:1 для солодов Лагер/Экстра светлый.',
     isExactMatch: true
   },
@@ -82,6 +87,7 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
     potentialSg: 1.038,
     colorEbc: 6.0,
     ratio: 1.0,
+    type: 'base',
     description: 'Прямая замена 1:1 солодам Pale Ale (Weyermann, Castle, Crisp). Дает золотистый оттенок и мягкий хлебный вкус.',
     tip: 'Универсальная основа для любых элей, IPA, APA, портеров и стаутов.',
     isExactMatch: true
@@ -91,6 +97,7 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
     potentialSg: 1.038,
     colorEbc: 7.0,
     ratio: 1.0,
+    type: 'base',
     description: 'Точная имитация знаменитого английского Maris Otter. Мюнхенский добавляет характерный бисквитный и ореховый привкус.',
     tip: 'На 4.5 кг Пэйл Эля добавьте 0.5 кг Курского Мюнхенского.',
     isExactMatch: false
@@ -100,6 +107,7 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
     potentialSg: 1.038,
     colorEbc: 6.5,
     ratio: 1.0,
+    type: 'base',
     description: 'Имитация шотландского Golden Promise со сладковатым чистым телом.',
     isExactMatch: false
   },
@@ -110,6 +118,7 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
     potentialSg: 1.036,
     colorEbc: 8.5,
     ratio: 1.0,
+    type: 'base',
     description: 'Прямая замена 1:1 венским солодам. Придает напитку янтарный цвет и насыщенный зерновой аромат с тонами тостов.',
     tip: 'Отлично подходит для лагеров, венского лагера, марцена и янтарных элей.',
     isExactMatch: true
@@ -121,6 +130,7 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
     potentialSg: 1.036,
     colorEbc: 20.0,
     ratio: 1.0,
+    type: 'base',
     description: 'Прямая замена Munich I / Munich II. Насыщенный солодовый вкус корки ржаного хлеба и бисквита.',
     tip: 'Для рецептов с Munich I (15 EBC) возьмите 90% дозы; для Munich II — 100%.',
     isExactMatch: true
@@ -132,6 +142,7 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
     potentialSg: 1.038,
     colorEbc: 4.5,
     ratio: 1.0,
+    type: 'wheat',
     description: 'Прямая замена импортному светgroup Wheat Malt (Castle / Weyermann). Создает фирменную стойкую пенную шапку и бархатистое тело.',
     tip: 'В засыпи выше 50% рекомендуется использовать рисовую шелуху для облегчения фильтрации.',
     isExactMatch: true
@@ -141,6 +152,7 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
     potentialSg: 1.037,
     colorEbc: 16.0,
     ratio: 1.0,
+    type: 'wheat',
     description: 'Аналог Dunkelweizen / Dark Wheat Malt для темного пшеничного пива.',
     isExactMatch: false
   },
@@ -151,6 +163,7 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
     potentialSg: 1.036,
     colorEbc: 8.0,
     ratio: 1.0,
+    type: 'adjunct',
     description: 'Прямая замена импортному Rye Malt для пряного сухого ржаного вкуса.',
     tip: 'Обязательно добавьте глюканазную паузу (45-50°C, 15 мин), рожь очень вязкая при фильтрации.',
     isExactMatch: true
@@ -158,12 +171,13 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
 
   // Карапилс / Декстрин / Карафом
   'carapils': {
-    kurskName: 'Курский Десертный / Карамельный 20 (Caramel 20 EBC)',
+    kurskName: 'Курский Десертный (Карамельный 20 EBC)',
     potentialSg: 1.033,
     colorEbc: 20.0,
-    ratio: 0.9,
-    description: 'Аналог Weyermann Carapils / Carafoam / Dextrin Malt. Служит для удержания пены и полноты вкуса.',
-    tip: 'Цвет Курского аналога чуть плотнее (15-20 EBC против 4 EBC), поэтому пиво получится на полтона золотистее, а пена будет такой же плотной.',
+    ratio: 0.95,
+    type: 'caramel',
+    description: 'Аналог Weyermann Carapils / Carafoam / Dextrin Malt. Служит для удержания стойкой пены и полноты вкуса.',
+    tip: 'Цвет Курского аналога чуть плотнее (20 EBC против 4 EBC), поэтому пиво получится на полтона золотистее, а пена будет исключительно плотной.',
     isExactMatch: true
   },
 
@@ -173,6 +187,7 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
     potentialSg: 1.034,
     colorEbc: 50.0,
     ratio: 0.85,
+    type: 'caramel',
     description: 'Замена Carahell (25 EBC). Дает карамельную округлость и красивый золотисто-медный блеск.',
     tip: 'Так как цвет Курского Карамельного 50 насыщеннее, можно взять на 15% меньше исходного рецепта.',
     isExactMatch: true
@@ -184,6 +199,7 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
     potentialSg: 1.034,
     colorEbc: 60.0,
     ratio: 1.0,
+    type: 'caramel',
     description: 'Аналог Carared для получения фирменного рубиново-красного оттенка. Меланоидины дают глубокий красный цвет и медовый привкус.',
     tip: 'Смешайте поровну Курский Меланоидиновый и Курский Карамельный 50.',
     isExactMatch: false
@@ -192,10 +208,11 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
   // Карамюнхен I/II/III
   'caramunich': {
     kurskName: 'Курский Карамельный 150 (Caramel 150 EBC)',
-    potentialSg: 1.034,
+    potentialSg: 1.033,
     colorEbc: 150.0,
     ratio: 1.0,
-    description: 'Аналог Caramunich I-II-III. Глубокий карамельный тон, ноты ириски, сушеных яблок и выпечки.',
+    type: 'caramel',
+    description: 'Аналог Caramunich I-II-III (90-150 EBC). Глубокий карамельный тон, ноты ириски, сушеных яблок и выпечки.',
     tip: 'Прямая замена 1:1 для темных элей, боков, дуббелей и портеров.',
     isExactMatch: true
   },
@@ -206,6 +223,7 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
     potentialSg: 1.033,
     colorEbc: 300.0,
     ratio: 1.0,
+    type: 'caramel',
     description: 'Аналог Caraaroma / Special B. Интенсивный аромат жареной карамели, темного изюма и сухофруктов.',
     tip: 'Идеален для крепких монастырских элей, барливайнов и плотных сортов.',
     isExactMatch: true
@@ -217,6 +235,7 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
     potentialSg: 1.032,
     colorEbc: 320.0,
     ratio: 1.0,
+    type: 'caramel',
     description: 'Замена бельгийского Castle Malting Chateau Special B. Вкус чернослива, инжира, жареной корочки пирога.',
     tip: 'Добавление 5% Курского Шоколадного дает аутентичную темную винную терпкость Special B.',
     isExactMatch: false
@@ -228,6 +247,7 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
     potentialSg: 1.035,
     colorEbc: 75.0,
     ratio: 1.0,
+    type: 'caramel',
     description: 'Прямой аналог Weyermann Melanoidin / Castle Chateau Melano. Имитирует традиционное отварочное затирание.',
     tip: 'Добавляет плотность, округлость и насыщенный медный цвет даже при инфузионном затирании.',
     isExactMatch: true
@@ -235,12 +255,37 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
 
   // Бисквит / Эмбер
   'biscuit': {
-    kurskName: 'Курский Венский (70%) + Курский Меланоидиновый (30%)',
-    potentialSg: 1.035,
-    colorEbc: 30.0,
+    kurskName: 'Курский Бисквитный (Biscuit / Amber 50 EBC)',
+    potentialSg: 1.034,
+    colorEbc: 50.0,
     ratio: 1.0,
-    description: 'Аналог Chateau Biscuit / Amber Malt. Теплый бисквитно-хлебный аромат свежего печенья.',
-    isExactMatch: false
+    type: 'caramel',
+    description: 'Аналог Chateau Biscuit / Amber Malt. Теплый бисквитно-хлебный аромат свежего печенья и тостов.',
+    isExactMatch: true
+  },
+
+  // Кристаллический солод Crystal
+  'crystal': {
+    kurskName: 'Курский Шато Кристалл (Crystal 150 EBC)',
+    potentialSg: 1.033,
+    colorEbc: 150.0,
+    ratio: 1.0,
+    type: 'caramel',
+    description: 'Прямой аналог Crystal 150 EBC / Chateau Crystal. Кристаллический карамельный солод для насыщенных биттеров и элей.',
+    tip: 'Придает глубокий рубиново-медный цвет и выразительный карамельный профиль.',
+    isExactMatch: true
+  },
+
+  // Несоложеный ячмень и ячменные хлопья
+  'flaked_barley': {
+    kurskName: 'Ячменные хлопья / Курский Пилснер',
+    potentialSg: 1.032,
+    colorEbc: 3.5,
+    ratio: 1.0,
+    type: 'adjunct',
+    description: 'Аналог Flaked Barley. Несоложеный ячмень для стойкой сливочной шапки пены сухого стаута.',
+    tip: 'Добавьте овсяные или ячменные хлопья прямо в затор для бархатистого тела.',
+    isExactMatch: true
   },
 
   // Кислый солод
@@ -249,6 +294,7 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
     potentialSg: 1.027,
     colorEbc: 4.5,
     ratio: 1.0,
+    type: 'acid',
     description: 'Прямая замена Acidulated / Saurmalz для мягкого снижения pH затора до идеальных 5.2-5.4.',
     tip: 'Альтернатива: 1-2 мл пищевой молочной кислоты 80% на каждые 10 л затора.',
     isExactMatch: true
@@ -260,6 +306,7 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
     potentialSg: 1.036,
     colorEbc: 6.0,
     ratio: 1.0,
+    type: 'base',
     description: 'Прямой аналог Weyermann Rauchmalz. Окурен на буковой щепе для классических раухбиров.',
     isExactMatch: true
   },
@@ -270,6 +317,7 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
     potentialSg: 1.028,
     colorEbc: 900.0,
     ratio: 1.0,
+    type: 'roasted',
     description: 'Прямой аналог Chocolate Malt. Теплые оттенки горького шоколада, какао-бобов и мокко.',
     tip: 'Для портеров и стаутов прямая замена 1:1.',
     isExactMatch: true
@@ -281,6 +329,7 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
     potentialSg: 1.025,
     colorEbc: 1100.0,
     ratio: 1.0,
+    type: 'roasted',
     description: 'Аналог Roasted Barley для ирландских сухих стаутов и РИС. Дает сухую кофейную жженку и непроницаемо черный цвет.',
     tip: 'Если хотите мягче без терпкости — засыпайте за 10 минут до конца затирания (на мэшаут).',
     isExactMatch: true
@@ -288,11 +337,12 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
 
   // Карафа / Черный
   'carafa': {
-    kurskName: 'Курский Шоколадный / Черный солод (1200 EBC)',
-    potentialSg: 1.028,
+    kurskName: 'Курский Черный солод (Black Malt 1200 EBC)',
+    potentialSg: 1.025,
     colorEbc: 1200.0,
-    ratio: 0.9,
-    description: 'Аналог Carafa Special / Black Malt. Дает глубокий цвет черного кофе.',
+    ratio: 0.95,
+    type: 'roasted',
+    description: 'Аналог Carafa Special / Black Malt. Дает глубокий цвет черного кофе без лишней терпкости.',
     tip: 'Поскольку Карафа Special декортикационная (без шелухи), Курский солод лучше перемолоть отдельно и внести при фильтрации, чтобы избежать резкой танинности.',
     isExactMatch: false
   },
@@ -303,6 +353,7 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
     potentialSg: 1.034,
     colorEbc: 4.0,
     ratio: 1.0,
+    type: 'adjunct',
     description: 'Курский овсяный солод или обычные овсяные хлопья быстрого приготовления заменяют Flaked Oats 1:1.',
     tip: 'Засыпайте прямо в затор вместе с базовым солодом, предварительно варить не нужно.',
     isExactMatch: true
@@ -978,99 +1029,254 @@ export const HOP_ALTERNATIVES_MAP: Record<string, HopAlternativeInfo[]> = {
  */
 export function isKurskMalt(grainName: string): boolean {
   const lower = grainName.toLowerCase();
+  // Если это старая заглушка "по цветности", она не является нормальным Курским солодом
+  if (lower.includes('по цветности')) {
+    return false;
+  }
   return lower.includes('курск') || lower.includes('kursk');
 }
 
 /**
- * Поиск аналога Курского солода по названию ингредиента
+ * Поиск аналога Курского солода по названию ингредиента, типу и цветности EBC
  */
-export function getKurskMaltSubstitute(grainName: string): KurskSubstituteInfo | null {
+export function getKurskMaltSubstitute(
+  grainName: string,
+  grainType?: GrainType,
+  colorEbc?: number
+): KurskSubstituteInfo | null {
   const lower = grainName.toLowerCase();
 
-  // Если это уже Курский солод, не предлагаем заменить его на самого себя
+  // Если это уже полноценный Курский солод, не предлагаем заменить его на самого себя
   if (isKurskMalt(grainName)) {
     return null;
   }
 
-  // Пилснер и лагерные
-  if (lower.includes('pilsner') || lower.includes('пилснер') || lower.includes('pils') || lower.includes('пилс') || lower.includes('extra pale') || lower.includes('экстра светлый')) {
-    return KURSK_MALT_MAP['pilsner'];
+  // 1. СПЕЦИАЛЬНЫЕ / КАРАМЕЛЬНЫЕ СОЛОДА (ПРОВЕРЯЕМ ПЕРВЫМИ, ЧТОБЫ НЕ СРЕЗАТЬСЯ НА ПОДСТРОКАХ PILSNER ИЛИ MUNICH!)
+  // Carapils / Carafoam / Dextrin / Карапилс
+  if (
+    lower.includes('carapils') ||
+    lower.includes('carafoam') ||
+    lower.includes('dextrin') ||
+    lower.includes('карапилс') ||
+    lower.includes('карафом') ||
+    lower.includes('декстрин')
+  ) {
+    return KURSK_MALT_MAP['carapils'];
   }
-  if (lower.includes('maris otter') || lower.includes('мэрис') || lower.includes('марис')) {
-    return KURSK_MALT_MAP['maris_otter'];
+
+  // Caramunich / Карамюнхен
+  if (
+    lower.includes('caramunich') ||
+    lower.includes('карамюнхен') ||
+    lower.includes('кара 150') ||
+    lower.includes('cara 150') ||
+    lower.includes('cara 120') ||
+    lower.includes('cara 90')
+  ) {
+    return KURSK_MALT_MAP['caramunich'];
   }
-  if (lower.includes('golden promise') || lower.includes('голден промис')) {
-    return KURSK_MALT_MAP['golden_promise'];
+
+  // Carahell / Карахелль
+  if (lower.includes('carahell') || lower.includes('карахел')) {
+    return KURSK_MALT_MAP['carahell'];
   }
-  if (lower.includes('pale ale') || lower.includes('пэйл') || lower.includes('пейл') || lower.includes('пэйлель') || lower.includes('ale malt')) {
-    return KURSK_MALT_MAP['pale_ale'];
+
+  // Carared / Chateau Red / Караред
+  if (lower.includes('carared') || lower.includes('караред') || lower.includes('chateau red')) {
+    return KURSK_MALT_MAP['carared'];
   }
-  if (lower.includes('vienna') || lower.includes('венский')) {
-    return KURSK_MALT_MAP['vienna'];
+
+  // Caraaroma / Caraamber / Караарома
+  if (lower.includes('caraaroma') || lower.includes('караарома') || lower.includes('caraamber') || lower.includes('караамбер')) {
+    return KURSK_MALT_MAP['caraaroma'];
   }
-  if (lower.includes('munich') || lower.includes('мюнхен')) {
-    return KURSK_MALT_MAP['munich'];
+
+  // Special B / Спешиал Б
+  if (lower.includes('special b') || lower.includes('спешиал') || lower.includes('спесиал')) {
+    return KURSK_MALT_MAP['special_b'];
   }
+
+  // Crystal / Chateau Crystal / Кристалл
+  if (lower.includes('crystal') || lower.includes('кристалл') || lower.includes('кристал')) {
+    return KURSK_MALT_MAP['crystal'];
+  }
+
+  // Melanoidin / Меланоидиновый
+  if (lower.includes('melanoidin') || lower.includes('меланоидин') || lower.includes('melano') || lower.includes('мелано')) {
+    return KURSK_MALT_MAP['melanoidin'];
+  }
+
+  // Biscuit / Amber / Бисквитный
+  if (lower.includes('biscuit') || lower.includes('бисквит') || lower.includes('amber') || lower.includes('эмбер')) {
+    return KURSK_MALT_MAP['biscuit'];
+  }
+
+  // 2. ЖЖЕНЫЕ И ТЕМНЫЕ СОЛОДА
+  // Carafa / Карафа / Black / Черный
+  if (lower.includes('carafa') || lower.includes('карафа') || lower.includes('black') || lower.includes('черный')) {
+    return KURSK_MALT_MAP['carafa'];
+  }
+  // Chocolate / Шоколадный
+  if (lower.includes('chocolate') || lower.includes('шоколад')) {
+    return KURSK_MALT_MAP['chocolate'];
+  }
+  // Roasted Barley / Жженый
+  if (lower.includes('roasted') || lower.includes('жжен') || lower.includes('роастед')) {
+    return KURSK_MALT_MAP['roasted_barley'];
+  }
+
+  // 3. ПШЕНИЧНЫЕ СОЛОДА
   if (lower.includes('dark wheat') || lower.includes('темный пшенич')) {
     return KURSK_MALT_MAP['dark_wheat'];
   }
   if (lower.includes('wheat') || lower.includes('пшенич') || lower.includes('weizen')) {
     return KURSK_MALT_MAP['wheat'];
   }
+
+  // 4. НЕСОЛОЖЕНКА, ХЛОПЬЯ И ЗЕРНОВЫЕ
+  if (
+    lower.includes('flaked barley') ||
+    lower.includes('ячменные хлоп') ||
+    lower.includes('ячменных хлоп') ||
+    lower.includes('несоложеный ячмень') ||
+    lower.includes('несоложенка')
+  ) {
+    return KURSK_MALT_MAP['flaked_barley'];
+  }
+  if (lower.includes('oat') || lower.includes('овес') || lower.includes('овсян') || lower.includes('геркулес')) {
+    return KURSK_MALT_MAP['flaked_oats'];
+  }
   if (lower.includes('rye') || lower.includes('ржан')) {
     return KURSK_MALT_MAP['rye'];
   }
-  if (lower.includes('carapils') || lower.includes('carafoam') || lower.includes('dextrin') || lower.includes('карапилс') || lower.includes('декстрин')) {
-    return KURSK_MALT_MAP['carapils'];
-  }
-  if (lower.includes('carahell') || lower.includes('карахел')) {
-    return KURSK_MALT_MAP['carahell'];
-  }
-  if (lower.includes('carared') || lower.includes('караред') || lower.includes('chateau red')) {
-    return KURSK_MALT_MAP['carared'];
-  }
-  if (lower.includes('caramunich') || lower.includes('карамюнхен') || lower.includes('кара 150') || lower.includes('cara 150')) {
-    return KURSK_MALT_MAP['caramunich'];
-  }
-  if (lower.includes('caraaroma') || lower.includes('караарома') || lower.includes('caraamber') || lower.includes('караамбер')) {
-    return KURSK_MALT_MAP['caraaroma'];
-  }
-  if (lower.includes('special b') || lower.includes('спешиал') || lower.includes('спесиал')) {
-    return KURSK_MALT_MAP['special_b'];
-  }
-  if (lower.includes('melanoidin') || lower.includes('меланоидин') || lower.includes('melano')) {
-    return KURSK_MALT_MAP['melanoidin'];
-  }
-  if (lower.includes('biscuit') || lower.includes('бисквит') || lower.includes('amber') || lower.includes('эмбер')) {
-    return KURSK_MALT_MAP['biscuit'];
-  }
+
+  // 5. КИСЛЫЙ И КОПЧЕНЫЙ
   if (lower.includes('acid') || lower.includes('кислый') || lower.includes('saurmalz')) {
     return KURSK_MALT_MAP['acidulated'];
   }
   if (lower.includes('smoked') || lower.includes('rauch') || lower.includes('копчен')) {
     return KURSK_MALT_MAP['smoked'];
   }
-  if (lower.includes('chocolate') || lower.includes('шоколад')) {
-    return KURSK_MALT_MAP['chocolate'];
+
+  // 6. БАЗОВЫЕ СОЛОДА (ПРОВЕРЯЕМ ПОСЛЕ СПЕЦИАЛЬНЫХ!)
+  if (lower.includes('maris otter') || lower.includes('мэрис') || lower.includes('марис')) {
+    return KURSK_MALT_MAP['maris_otter'];
   }
-  if (lower.includes('roasted') || lower.includes('жжен') || lower.includes('роастед')) {
-    return KURSK_MALT_MAP['roasted_barley'];
+  if (lower.includes('golden promise') || lower.includes('голден промис')) {
+    return KURSK_MALT_MAP['golden_promise'];
   }
-  if (lower.includes('carafa') || lower.includes('карафа') || lower.includes('black') || lower.includes('черный')) {
-    return KURSK_MALT_MAP['carafa'];
+  if (lower.includes('vienna') || lower.includes('венский')) {
+    return KURSK_MALT_MAP['vienna'];
   }
-  if (lower.includes('oat') || lower.includes('овес') || lower.includes('овсян') || lower.includes('геркулес')) {
+  if (!lower.includes('caramunich') && !lower.includes('карамюнхен') && (lower.includes('munich') || lower.includes('мюнхен'))) {
+    return KURSK_MALT_MAP['munich'];
+  }
+  if (lower.includes('pale ale') || lower.includes('пэйл') || lower.includes('пейл') || lower.includes('пэйлель') || lower.includes('ale malt')) {
+    return KURSK_MALT_MAP['pale_ale'];
+  }
+  if (
+    !lower.includes('carapils') &&
+    !lower.includes('карапилс') &&
+    (lower.includes('pilsner') ||
+      lower.includes('пилснер') ||
+      lower.includes('pils') ||
+      lower.includes('пилс') ||
+      lower.includes('extra pale') ||
+      lower.includes('экстра светлый') ||
+      lower.includes('lager') ||
+      lower.includes('лагер') ||
+      lower.includes('светлый ячменный') ||
+      lower.includes('базовый'))
+  ) {
+    return KURSK_MALT_MAP['pilsner'];
+  }
+
+  // 7. УМНЫЙ ФОЛЛБЭК: ВСЕГДА ВЫБИРАЕМ КОНКРЕТНЫЙ РЕАЛЬНЫЙ КУРСКИЙ СОЛОД ПО ТИПУ И EBC (НИКАКИХ НЕОПРЕДЕЛЕННЫХ ЗАГЛУШЕК!)
+  const effType = grainType || (lower.includes('карамель') || lower.includes('caramel') ? 'caramel' : 'base');
+  const effEbc = colorEbc !== undefined && colorEbc > 0 ? colorEbc : 6.0;
+
+  if (effType === 'roasted' || effEbc >= 500) {
+    return effEbc >= 1000 ? KURSK_MALT_MAP['roasted_barley'] : KURSK_MALT_MAP['chocolate'];
+  }
+  if (effType === 'caramel' || effEbc > 20) {
+    if (effEbc >= 250) return KURSK_MALT_MAP['caraaroma'];
+    if (effEbc >= 100) return KURSK_MALT_MAP['caramunich'];
+    if (effEbc >= 60) return KURSK_MALT_MAP['melanoidin'];
+    return KURSK_MALT_MAP['carahell'];
+  }
+  if (effType === 'wheat') {
+    return effEbc > 10 ? KURSK_MALT_MAP['dark_wheat'] : KURSK_MALT_MAP['wheat'];
+  }
+  if (effType === 'acid') {
+    return KURSK_MALT_MAP['acidulated'];
+  }
+  if (effType === 'adjunct') {
     return KURSK_MALT_MAP['flaked_oats'];
   }
 
-  // Общий фоллбэк для импортных солодов
-  return {
-    kurskName: 'Курский солод (по цветности EBC)',
-    potentialSg: 1.037,
-    colorEbc: 6.0,
-    ratio: 1.0,
-    description: 'Для данного солода подберите Курский аналог схожего диапазона EBC (Базовый, Карамельный или Жженый).'
-  };
+  // Базовый фоллбэк
+  if (effEbc >= 15) return KURSK_MALT_MAP['munich'];
+  if (effEbc >= 7) return KURSK_MALT_MAP['vienna'];
+  return KURSK_MALT_MAP['pilsner'];
+}
+
+/**
+ * Нормализация и автокоррекция параметров солода:
+ * - Устраняет рассинхрон типа (например, если солод Пилснер или Мюнхенский ошибочно числился 'caramel')
+ * - Заменяет устаревшие временные заглушки на полноценный Курский солод
+ */
+export function normalizeGrain(grain: GrainItem): GrainItem {
+  const lower = grain.name.toLowerCase();
+
+  // Если попалась устаревшая заглушка "по цветности"
+  if (lower.includes('по цветности')) {
+    const sub = getKurskMaltSubstitute('Crystal 150', grain.type, grain.colorEbc) || KURSK_MALT_MAP['crystal'];
+    return {
+      ...grain,
+      name: sub.kurskName,
+      potentialSg: sub.potentialSg,
+      colorEbc: sub.colorEbc,
+      type: sub.type
+    };
+  }
+
+  // Базовые солода не должны иметь тип 'caramel' или 'roasted'
+  const isBaseName =
+    (lower.includes('пилснер') ||
+      lower.includes('pilsner') ||
+      lower.includes('пэйл') ||
+      lower.includes('pale') ||
+      lower.includes('венский') ||
+      lower.includes('vienna') ||
+      lower.includes('мюнхен') ||
+      lower.includes('munich')) &&
+    !lower.includes('кара') &&
+    !lower.includes('cara');
+
+  if (isBaseName && (grain.type === 'caramel' || grain.type === 'roasted')) {
+    return { ...grain, type: 'base' };
+  }
+
+  // Карамельные солода не должны иметь тип 'base'
+  const isCaramelName =
+    lower.includes('карамель') ||
+    lower.includes('десертный') ||
+    lower.includes('кристалл') ||
+    lower.includes('caramel') ||
+    lower.includes('crystal') ||
+    lower.includes('carapils') ||
+    lower.includes('caramunich') ||
+    lower.includes('carahell') ||
+    lower.includes('carared') ||
+    lower.includes('caraaroma') ||
+    lower.includes('special b') ||
+    lower.includes('спешиал');
+
+  if (isCaramelName && grain.type === 'base') {
+    return { ...grain, type: 'caramel' };
+  }
+
+  return grain;
 }
 
 /**

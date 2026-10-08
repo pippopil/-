@@ -316,7 +316,7 @@ export default function App() {
   // Глобальный целевой объем партии (в литрах)
   const [globalBatchSizeL, setGlobalBatchSizeL] = useState<number>(() => {
     const saved = localStorage.getItem('masterbrew_batch_size');
-    return saved ? parseFloat(saved) || 20 : 20;
+    return saved ? parseFloat(saved) || 30 : 30;
   });
   useEffect(() => {
     localStorage.setItem('masterbrew_batch_size', String(globalBatchSizeL));
@@ -371,7 +371,7 @@ export default function App() {
       category: 'Эли / Хмелевые',
       description: 'Авторский крафтовый рецепт с чистой солодовой засыпью и сбалансированным охмелением.',
       author: 'Вы',
-      batchSizeL: 20,
+      batchSizeL: 30,
       boilTimeMin: 60,
       efficiencyPercent: 72,
       grainRatioLPerKg: 3.5,
@@ -379,12 +379,12 @@ export default function App() {
       targetCarbonationVol: 2.4,
       beerTempAtBottlingC: 19,
       grains: [
-        { id: `g_${Date.now()}_1`, name: 'Pale Ale Malt', weightKg: 4.5, potentialSg: 1.038, colorEbc: 6.0, type: 'base' },
-        { id: `g_${Date.now()}_2`, name: 'Carapils', weightKg: 0.3, potentialSg: 1.033, colorEbc: 4.5, type: 'caramel' }
+        { id: `g_${Date.now()}_1`, name: 'Pale Ale Malt', weightKg: 6.5, potentialSg: 1.038, colorEbc: 6.0, type: 'base' },
+        { id: `g_${Date.now()}_2`, name: 'Carapils', weightKg: 0.5, potentialSg: 1.033, colorEbc: 4.5, type: 'caramel' }
       ],
       hops: [
-        { id: `h_${Date.now()}_1`, name: 'Magnum', weightG: 15, alphaAcid: 14.0, boilTimeMin: 60, use: 'boil' },
-        { id: `h_${Date.now()}_2`, name: 'Cascade', weightG: 30, alphaAcid: 6.0, boilTimeMin: 15, use: 'boil' }
+        { id: `h_${Date.now()}_1`, name: 'Magnum', weightG: 25, alphaAcid: 14.0, boilTimeMin: 60, use: 'boil' },
+        { id: `h_${Date.now()}_2`, name: 'Cascade', weightG: 45, alphaAcid: 6.0, boilTimeMin: 15, use: 'boil' }
       ],
       mashSchedule: [
         { id: 'm1', name: 'Осахаривание (Мальтозная)', tempC: 66, timeMin: 60, type: 'maltose' },

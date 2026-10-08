@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   CalculatedBrewParams,
   GrainItem,
@@ -22,7 +22,8 @@ import {
   KURSK_MALT_MAP,
   HOP_ALTERNATIVES_MAP,
   KURSK_MALT_PRODUCTS,
-  isKurskMalt
+  isKurskMalt,
+  normalizeGrain
 } from '../utils/brewingSubstitutions';
 import {
   Beer,
@@ -105,6 +106,9 @@ export const RecipeBuilder: React.FC<Props> = ({
   // Пересчет показателей при любом изменении
   const updateParams = (fields: Partial<Recipe>) => {
     const nextRecipe = { ...recipe, ...fields };
+    if (fields.grains) {
+      nextRecipe.grains = fields.grains.map(normalizeGrain);
+    }
     const calculated = calculateBrewMetrics({
       batchSizeL: nextRecipe.batchSizeL,
       boilTimeMin: nextRecipe.boilTimeMin,
@@ -123,6 +127,21 @@ export const RecipeBuilder: React.FC<Props> = ({
       updatedAt: new Date().toISOString()
     });
   };
+
+  // Автоматическая нормализация типов солодов (исправляет неверные типы и устаревшие заглушки)
+  useEffect(() => {
+    let hasAnomaly = false;
+    const normalized = recipe.grains.map(g => {
+      const n = normalizeGrain(g);
+      if (n.name !== g.name || n.type !== g.type) {
+        hasAnomaly = true;
+      }
+      return n;
+    });
+    if (hasAnomaly) {
+      updateParams({ grains: normalized });
+    }
+  }, [recipe.id]);
 
   const validation = validateRecipeAgainstStyle(recipe.calculated, recipe.style);
 
@@ -196,28 +215,30 @@ export const RecipeBuilder: React.FC<Props> = ({
   const handleApplyKurskSubstitute = (grainId: string) => {
     const grain = recipe.grains.find(g => g.id === grainId);
     if (!grain) return;
-    const sub = getKurskMaltSubstitute(grain.name);
+    const sub = getKurskMaltSubstitute(grain.name, grain.type, grain.colorEbc);
     if (!sub) return;
 
     updateGrain(grainId, {
       name: sub.kurskName,
       potentialSg: sub.potentialSg,
       colorEbc: sub.colorEbc,
-      weightKg: Number((grain.weightKg * sub.ratio).toFixed(2))
+      weightKg: Number((grain.weightKg * sub.ratio).toFixed(2)),
+      type: sub.type || grain.type
     });
   };
 
   // Пакетная замена всех солодов рецепта на Курский солод
   const handleApplyAllKurskSubstitutes = () => {
     const updatedGrains = recipe.grains.map(grain => {
-      const sub = getKurskMaltSubstitute(grain.name);
-      if (!sub) return grain;
+      const sub = getKurskMaltSubstitute(grain.name, grain.type, grain.colorEbc);
+      if (!sub) return normalizeGrain(grain);
       return {
         ...grain,
         name: sub.kurskName,
         potentialSg: sub.potentialSg,
         colorEbc: sub.colorEbc,
-        weightKg: Number((grain.weightKg * sub.ratio).toFixed(2))
+        weightKg: Number((grain.weightKg * sub.ratio).toFixed(2)),
+        type: sub.type || grain.type
       };
     });
     updateParams({ grains: updatedGrains });
@@ -452,7 +473,7 @@ export const RecipeBuilder: React.FC<Props> = ({
               onChange={(val) => updateParams({ batchSizeL: val })}
               min={1}
               max={1000}
-              fallbackValue={20}
+              fallbackValue={30}
               className="w-full bg-stone-50 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700 rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold text-stone-800 dark:text-stone-100 focus:outline-none focus:ring-1 focus:ring-amber-500"
             />
           </div>
@@ -866,8 +887,8 @@ export const RecipeBuilder: React.FC<Props> = ({
             <tbody className="divide-y divide-stone-100 dark:divide-stone-800/60">
               {recipe.grains.map((grain) => {
                 const sharePercent = ((grain.weightKg / Math.max(0.1, recipe.calculated.totalGrainWeightKg)) * 100).toFixed(1);
-                const sub = getKurskMaltSubstitute(grain.name);
-                const isAlreadyKursk = grain.name.toLowerCase().includes('курск');
+                const sub = getKurskMaltSubstitute(grain.name, grain.type, grain.colorEbc);
+                const isAlreadyKursk = isKurskMalt(grain.name);
 
                 return (
                   <tr key={grain.id} className="hover:bg-amber-50/40 dark:hover:bg-stone-800/40 transition-colors">
