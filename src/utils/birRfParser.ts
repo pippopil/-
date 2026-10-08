@@ -46,10 +46,10 @@ export function parseBirRfRecipe(html: string, sourceUrl?: string): Recipe | nul
     }
 
     // 5. Параметры варки: объем, кипячение, эффективность
-    let batchSizeL = 20.0;
+    let batchSizeL = 30.0;
     const sizeMatch = html.match(/Размер:[^0-9]*([0-9.]+)\s*л/i) || html.match(/Размер партии после кипячения:[^0-9]*([0-9.]+)\s*л/i);
     if (sizeMatch && sizeMatch[1]) {
-      batchSizeL = parseFloat(sizeMatch[1]) || 20.0;
+      batchSizeL = parseFloat(sizeMatch[1]) || 30.0;
     }
 
     let boilTimeMin = 60;

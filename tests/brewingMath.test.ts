@@ -501,11 +501,12 @@ describe('Brewing Math Unit Tests (Калькулятор МастерВарка
       expect(pilsnerSub?.kurskName).toContain('Пилснер');
       expect(pilsnerSub?.type).toBe('base');
 
-      // 5. Crystal must map to Shato Crystal 150 EBC, NEVER to an ambiguous placeholder
+      // 5. Crystal / Chateau Crystal 150 EBC must map to Kurskiy Caramel 150 (no fake "Shato Kristall" in Kursk Malt catalog)
       const crystalSub = getKurskMaltSubstitute('Crystal 150 EBC', 'caramel', 150);
       expect(crystalSub).not.toBeNull();
-      expect(crystalSub?.kurskName).toContain('Кристалл');
+      expect(crystalSub?.kurskName).toBe('Курский Карамельный 150 (Caramel 150 EBC)');
       expect(crystalSub?.type).toBe('caramel');
+      expect(crystalSub?.kurskName).not.toContain('Шато');
       expect(crystalSub?.kurskName).not.toContain('по цветности');
 
       // 6. Flaked Barley must map to adjunct, not placeholder
@@ -514,9 +515,11 @@ describe('Brewing Math Unit Tests (Калькулятор МастерВарка
       expect(barleySub?.type).toBe('adjunct');
       expect(barleySub?.kurskName).not.toContain('по цветности');
 
-      // 7. isKurskMalt rejects broken placeholder
+      // 7. isKurskMalt rejects broken placeholder and fake Shato
       expect(isKurskMalt('Курский солод (по цветности EBC)')).toBe(false);
+      expect(isKurskMalt('Курский Шато Кристалл')).toBe(false);
       expect(isKurskMalt('Курский Пилснер (Pilsner Malt)')).toBe(true);
+      expect(isKurskMalt('Курский Карамельный 150 (Caramel 150 EBC)')).toBe(true);
 
       // 8. normalizeGrain auto-heals mismatched types
       const misclassifiedPilsner = normalizeGrain({
@@ -537,7 +540,7 @@ describe('Brewing Math Unit Tests (Калькулятор МастерВарка
         colorEbc: 150,
         type: 'caramel'
       });
-      expect(placeholderGrain.name).toContain('Кристалл');
+      expect(placeholderGrain.name).toBe('Курский Карамельный 150 (Caramel 150 EBC)');
       expect(placeholderGrain.type).toBe('caramel');
     });
   });

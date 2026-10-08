@@ -35,7 +35,7 @@ import {
   INITIAL_POSTS,
   INITIAL_RECIPES
 } from './data/defaultData';
-import { calculateBrewMetrics } from './utils/brewingMath';
+import { calculateBrewMetrics, scaleRecipeIngredients } from './utils/brewingMath';
 
 export default function App() {
   // Тема (светлая / тёмная)
@@ -121,10 +121,29 @@ export default function App() {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
+          // Если рецепты в хранилище были на старые 20 л, масштабируем их до 30 л
+          const migrated = parsed.map((r: Recipe) => {
+            if (r.batchSizeL === 20) {
+              const { scaledGrains, scaledHops } = scaleRecipeIngredients(r.grains, r.hops, 20, 30);
+              return {
+                ...r,
+                batchSizeL: 30,
+                grains: scaledGrains,
+                hops: scaledHops,
+                calculated: calculateBrewMetrics({
+                  ...r,
+                  batchSizeL: 30,
+                  grains: scaledGrains,
+                  hops: scaledHops
+                })
+              };
+            }
+            return r;
+          });
           // Объединяем с новыми 34 эталонными рецептами, если их не было в кэше
-          const existingIds = new Set(parsed.map((r: any) => r.id));
+          const existingIds = new Set(migrated.map((r: any) => r.id));
           const missingNew = INITIAL_RECIPES.filter(r => !existingIds.has(r.id));
-          return [...parsed, ...missingNew];
+          return [...migrated, ...missingNew];
         }
       } catch (e) {
         console.error('Failed to parse recipes from storage', e);

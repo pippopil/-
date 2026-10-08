@@ -1,5 +1,5 @@
 import { Recipe } from '../types/brewing';
-import { calculateBrewMetrics } from '../utils/brewingMath';
+import { calculateBrewMetrics, scaleRecipeIngredients } from '../utils/brewingMath';
 
 export interface OnlineRecipeSource {
   id: string;
@@ -509,17 +509,28 @@ export const ONLINE_RECIPES_CATALOG: OnlineRecipeItem[] = [
 /**
  * Преобразовать элемент онлайн-каталога в полноценный Recipe для приложения
  */
-export function convertOnlineItemToRecipe(item: OnlineRecipeItem): Recipe {
+export function convertOnlineItemToRecipe(item: OnlineRecipeItem, targetBatchL: number = 30): Recipe {
+  let effectiveBatchL = item.batchSizeL;
+  let rawGrains = item.grains.map((g, idx) => ({ ...g, id: `g_${idx}_${Date.now()}` }));
+  let rawHops = item.hops.map((h, idx) => ({ ...h, id: `h_${idx}_${Date.now()}` }));
+
+  if (targetBatchL && targetBatchL !== item.batchSizeL) {
+    const { scaledGrains, scaledHops } = scaleRecipeIngredients(rawGrains, rawHops, item.batchSizeL, targetBatchL);
+    rawGrains = scaledGrains;
+    rawHops = scaledHops;
+    effectiveBatchL = targetBatchL;
+  }
+
   const calculated = calculateBrewMetrics({
-    batchSizeL: item.batchSizeL,
+    batchSizeL: effectiveBatchL,
     boilTimeMin: item.boilTimeMin,
     efficiencyPercent: item.efficiencyPercent,
     grainRatioLPerKg: 3.5,
     grainTempC: 20,
     targetCarbonationVol: 2.4,
     beerTempAtBottlingC: 20,
-    grains: item.grains.map((g, idx) => ({ ...g, id: `g_online_${idx}_${Date.now()}` })),
-    hops: item.hops.map((h, idx) => ({ ...h, id: `h_online_${idx}_${Date.now()}` })),
+    grains: rawGrains,
+    hops: rawHops,
     yeast: item.yeast
   });
 
@@ -530,15 +541,15 @@ export function convertOnlineItemToRecipe(item: OnlineRecipeItem): Recipe {
     category: item.category,
     description: item.description,
     author: item.breweryClone ? `Клон: ${item.breweryClone}` : item.origin,
-    batchSizeL: item.batchSizeL,
+    batchSizeL: effectiveBatchL,
     boilTimeMin: item.boilTimeMin,
     efficiencyPercent: item.efficiencyPercent,
     grainRatioLPerKg: 3.5,
     grainTempC: 20,
     targetCarbonationVol: 2.4,
     beerTempAtBottlingC: 20,
-    grains: item.grains.map((g, idx) => ({ ...g, id: `g_${idx}_${Date.now()}` })),
-    hops: item.hops.map((h, idx) => ({ ...h, id: `h_${idx}_${Date.now()}` })),
+    grains: rawGrains,
+    hops: rawHops,
     mashSchedule: item.mashSchedule.map((m, idx) => ({ ...m, id: `m_${idx}_${Date.now()}` })),
     yeast: item.yeast,
     calculated,

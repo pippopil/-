@@ -1,5 +1,5 @@
 import { CommunityPost, InventoryItem, Lifehack, Recipe } from '../types/brewing';
-import { calculateBrewMetrics } from '../utils/brewingMath';
+import { calculateBrewMetrics, scaleRecipeIngredients } from '../utils/brewingMath';
 
 // Полный каталог всех существующих пивоваренных солодов
 export const COMMON_GRAINS = [
@@ -23,6 +23,8 @@ export const COMMON_GRAINS = [
   { name: 'Caramunich III (Карамюнхен 150 EBC)', potentialSg: 1.033, colorEbc: 150.0, type: 'caramel' as const, group: 'Карамельные' },
   { name: 'Caraaroma (Караарома 350 EBC)', potentialSg: 1.033, colorEbc: 350.0, type: 'caramel' as const, group: 'Карамельные' },
   { name: 'Special B (Спешиал Б 300 EBC - изюм, чернослив)', potentialSg: 1.032, colorEbc: 300.0, type: 'caramel' as const, group: 'Карамельные' },
+  { name: 'Chateau Crystal (Шато Кристалл 150 EBC, Castle Malting Бельгия)', potentialSg: 1.033, colorEbc: 150.0, type: 'caramel' as const, group: 'Карамельные' },
+  { name: 'Chateau Biscuit (Шато Бисквит 50 EBC, Castle Malting Бельгия)', potentialSg: 1.034, colorEbc: 50.0, type: 'caramel' as const, group: 'Специальные' },
   { name: 'Melanoidin Malt (Меланоидиновый)', potentialSg: 1.035, colorEbc: 70.0, type: 'caramel' as const, group: 'Карамельные' },
   { name: 'Acidulated Malt (Кислый солод для pH)', potentialSg: 1.027, colorEbc: 4.5, type: 'acid' as const, group: 'Специальные' },
 
@@ -59,12 +61,11 @@ export const COMMON_GRAINS = [
   { name: 'Курский Карамельный 250 (Caramel 250 EBC)', potentialSg: 1.032, colorEbc: 250.0, type: 'caramel' as const, group: 'Курский солод' },
   { name: 'Курский Карамельный 300 (Caramel 300 EBC)', potentialSg: 1.032, colorEbc: 300.0, type: 'caramel' as const, group: 'Курский солод' },
   { name: 'Курский Меланоидиновый (Melanoidin 75 EBC)', potentialSg: 1.035, colorEbc: 75.0, type: 'caramel' as const, group: 'Курский солод' },
-  { name: 'Курский Бисквитный (Biscuit / Amber 50 EBC)', potentialSg: 1.034, colorEbc: 50.0, type: 'caramel' as const, group: 'Курский солод' },
-  { name: 'Курский Шато Кристалл (Crystal 150 EBC)', potentialSg: 1.033, colorEbc: 150.0, type: 'caramel' as const, group: 'Курский солод' },
   { name: 'Курский Кислый (Acidulated Malt)', potentialSg: 1.027, colorEbc: 4.5, type: 'acid' as const, group: 'Курский солод' },
   { name: 'Курский Копченый (Smoked Malt)', potentialSg: 1.036, colorEbc: 6.0, type: 'base' as const, group: 'Курский солод' },
   { name: 'Курский Шоколадный (Chocolate 900 EBC)', potentialSg: 1.028, colorEbc: 900.0, type: 'roasted' as const, group: 'Курский солод' },
-  { name: 'Курский Жженый (Roasted Barley 1100 EBC)', potentialSg: 1.025, colorEbc: 1100.0, type: 'roasted' as const, group: 'Курский солод' },
+  { name: 'Курский Жженый (Roasted Malt 1400 EBC)', potentialSg: 1.024, colorEbc: 1400.0, type: 'roasted' as const, group: 'Курский солод' },
+  { name: 'Курский Жженый ячмень (Roasted Barley 1100 EBC)', potentialSg: 1.025, colorEbc: 1100.0, type: 'roasted' as const, group: 'Курский солод' },
   { name: 'Курский Черный солод (Black Malt 1200 EBC)', potentialSg: 1.025, colorEbc: 1200.0, type: 'roasted' as const, group: 'Курский солод' },
   { name: 'Курский Диафарин (Энзимный ферментативный солод)', potentialSg: 1.037, colorEbc: 3.5, type: 'base' as const, group: 'Курский солод' }
 ];
@@ -466,16 +467,28 @@ function createRecipe(
   tags: string[],
   collection: Recipe['collection'] = undefined
 ): Recipe {
+  // По требованию: заполнение рецепта всегда начинается с 30 литров объема партии, а не 20
+  let finalBatchSizeL = batchSizeL;
+  let finalGrains = grains;
+  let finalHops = hops;
+
+  if (batchSizeL === 20) {
+    const { scaledGrains, scaledHops } = scaleRecipeIngredients(grains, hops, 20, 30);
+    finalBatchSizeL = 30;
+    finalGrains = scaledGrains;
+    finalHops = scaledHops;
+  }
+
   const calculated = calculateBrewMetrics({
-    batchSizeL,
+    batchSizeL: finalBatchSizeL,
     boilTimeMin,
     efficiencyPercent,
     grainRatioLPerKg: 3.5,
     grainTempC: 20,
     targetCarbonationVol,
     beerTempAtBottlingC,
-    grains,
-    hops,
+    grains: finalGrains,
+    hops: finalHops,
     yeast
   });
 
@@ -486,15 +499,15 @@ function createRecipe(
     category,
     description,
     author,
-    batchSizeL,
+    batchSizeL: finalBatchSizeL,
     boilTimeMin,
     efficiencyPercent,
     grainRatioLPerKg: 3.5,
     grainTempC: 20,
     targetCarbonationVol,
     beerTempAtBottlingC,
-    grains,
-    hops,
+    grains: finalGrains,
+    hops: finalHops,
     yeast,
     mashSchedule,
     calculated,

@@ -48,12 +48,12 @@ export const KURSK_MALT_PRODUCTS = [
   { name: 'Курский Карамельный 250 (Caramel 250 EBC)', colorEbc: 250.0, potentialSg: 1.032, type: 'caramel' as const, description: 'Спелая слива, изюм и поджаренная карамель.' },
   { name: 'Курский Карамельный 300 (Caramel 300 EBC)', colorEbc: 300.0, potentialSg: 1.032, type: 'caramel' as const, description: 'Аналог Special B и Caraaroma, ноты инжира и чернослива.' },
   { name: 'Курский Меланоидиновый (Melanoidin 75 EBC)', colorEbc: 75.0, potentialSg: 1.035, type: 'caramel' as const, description: 'Имитация традиционного декокционного отварочного затирания.' },
-  { name: 'Курский Бисквитный (Biscuit / Amber 50 EBC)', colorEbc: 50.0, potentialSg: 1.034, type: 'caramel' as const, description: 'Интенсивный вкус поджаренного хлеба, теплого бисквита и орехов.' },
-  { name: 'Курский Шато Кристалл (Crystal 150 EBC)', colorEbc: 150.0, potentialSg: 1.033, type: 'caramel' as const, description: 'Кристаллический карамельный солод для насыщенных биттеров и элей.' },
+  { name: 'Курский Солод двойной обжарки (250-350 EBC)', colorEbc: 300.0, potentialSg: 1.032, type: 'caramel' as const, description: 'Специальный солод глубокой двойной обжарки с богатым вкусом хлебной корки и сухофруктов.' },
   { name: 'Курский Кислый (Acidulated Malt)', colorEbc: 4.5, potentialSg: 1.027, type: 'acid' as const, description: 'Снижение pH затора натуральной молочной кислотой солода.' },
   { name: 'Курский Копченый (Smoked Malt)', colorEbc: 6.0, potentialSg: 1.036, type: 'base' as const, description: 'Окурен буковой щепой, идеален для раухбиров и копченых портеров.' },
   { name: 'Курский Шоколадный (Chocolate 900 EBC)', colorEbc: 900.0, potentialSg: 1.028, type: 'roasted' as const, description: 'Теплые тона горького шоколада, какао и кофейных зерен.' },
-  { name: 'Курский Жженый (Roasted Barley 1100 EBC)', colorEbc: 1100.0, potentialSg: 1.025, type: 'roasted' as const, description: 'Сухая кофейная жженка и непроницаемый черный цвет для стаутов.' },
+  { name: 'Курский Жженый (Roasted Malt 1400 EBC)', colorEbc: 1400.0, potentialSg: 1.024, type: 'roasted' as const, description: 'Глубокая обжарка в барабанах до 1400 EBC для стаутов и портеров.' },
+  { name: 'Курский Жженый ячмень (Roasted Barley 1100 EBC)', colorEbc: 1100.0, potentialSg: 1.025, type: 'roasted' as const, description: 'Сухая кофейная жженка и непроницаемый черный цвет для стаутов.' },
   { name: 'Курский Черный солод (Black Malt 1200 EBC)', colorEbc: 1200.0, potentialSg: 1.025, type: 'roasted' as const, description: 'Интенсивный черный цвет с минимальной горечью.' },
   { name: 'Курский Диафарин (Энзимный ферментативный солод)', colorEbc: 3.5, potentialSg: 1.037, type: 'base' as const, description: 'Высочайшая ферментативная сила для осахаривания несоложенки.' }
 ];
@@ -255,23 +255,24 @@ export const KURSK_MALT_MAP: Record<string, KurskSubstituteInfo> = {
 
   // Бисквит / Эмбер
   'biscuit': {
-    kurskName: 'Курский Бисквитный (Biscuit / Amber 50 EBC)',
+    kurskName: 'Курский Карамельный 50 (Caramel 50 EBC)',
     potentialSg: 1.034,
     colorEbc: 50.0,
     ratio: 1.0,
     type: 'caramel',
-    description: 'Аналог Chateau Biscuit / Amber Malt. Теплый бисквитно-хлебный аромат свежего печенья и тостов.',
-    isExactMatch: true
+    description: 'Аналог Castle Malting Chateau Biscuit / Amber Malt. Теплый бисквитно-хлебный аромат свежего печенья и тостов.',
+    tip: 'В линейке завода «Курский солод» нет отдельного сорта «Бисквит», поэтому в качестве аналога используется Карамельный 50 или Меланоидиновый солод.',
+    isExactMatch: false
   },
 
   // Кристаллический солод Crystal
   'crystal': {
-    kurskName: 'Курский Шато Кристалл (Crystal 150 EBC)',
+    kurskName: 'Курский Карамельный 150 (Caramel 150 EBC)',
     potentialSg: 1.033,
     colorEbc: 150.0,
     ratio: 1.0,
     type: 'caramel',
-    description: 'Прямой аналог Crystal 150 EBC / Chateau Crystal. Кристаллический карамельный солод для насыщенных биттеров и элей.',
+    description: 'Официальный курский аналог импортного Castle Malting Chateau Crystal и английского Crystal 150 EBC. Кристаллический карамельный солод для насыщенных биттеров и элей.',
     tip: 'Придает глубокий рубиново-медный цвет и выразительный карамельный профиль.',
     isExactMatch: true
   },
@@ -1033,6 +1034,10 @@ export function isKurskMalt(grainName: string): boolean {
   if (lower.includes('по цветности')) {
     return false;
   }
+  // Солод Шато (Château) — это продукция бельгийского завода Castle Malting, а не завода «Курский солод»
+  if (lower.includes('шато') || lower.includes('chateau')) {
+    return false;
+  }
   return lower.includes('курск') || lower.includes('kursk');
 }
 
@@ -1228,9 +1233,12 @@ export function getKurskMaltSubstitute(
 export function normalizeGrain(grain: GrainItem): GrainItem {
   const lower = grain.name.toLowerCase();
 
-  // Если попалась устаревшая заглушка "по цветности"
-  if (lower.includes('по цветности')) {
-    const sub = getKurskMaltSubstitute('Crystal 150', grain.type, grain.colorEbc) || KURSK_MALT_MAP['crystal'];
+  // Если попалась устаревшая заглушка "по цветности" или ошибочный солод "Шато"
+  if (
+    lower.includes('по цветности') ||
+    (lower.includes('курск') && (lower.includes('шато') || lower.includes('chateau') || lower.includes('кристал')))
+  ) {
+    const sub = KURSK_MALT_MAP['crystal'];
     return {
       ...grain,
       name: sub.kurskName,

@@ -204,7 +204,7 @@ export const OnlineRecipeHubModal: React.FC<Props> = ({
             style: recipeData.style?.name || recipeData.style || 'Крафтовый стиль',
             category: recipeData.category || 'Крафт',
             description: recipeData.notes || recipeData.description || `Загружено из ${targetUrl}`,
-            batchSizeL: parseFloat(recipeData.batchSizeL || recipeData.batch_size || '20'),
+            batchSizeL: parseFloat(recipeData.batchSizeL || recipeData.batch_size || '30'),
             boilTimeMin: parseInt(recipeData.boilTimeMin || recipeData.boil_time || '60', 10),
             efficiencyPercent: parseFloat(recipeData.efficiencyPercent || recipeData.efficiency || '72'),
             grainRatioLPerKg: 3.5,

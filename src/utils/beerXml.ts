@@ -102,7 +102,7 @@ export function importFromBeerXml(xmlString: string): Recipe | null {
     const name = recipeEl.querySelector('NAME')?.textContent?.trim() || 'Импортированный рецепт';
     const style = recipeEl.querySelector('STYLE > NAME')?.textContent?.trim() || 'Пользовательский стиль';
     const category = recipeEl.querySelector('STYLE > CATEGORY')?.textContent?.trim() || 'Крафт';
-    const batchSizeL = parseFloat(recipeEl.querySelector('BATCH_SIZE')?.textContent || '20.0');
+    const batchSizeL = parseFloat(recipeEl.querySelector('BATCH_SIZE')?.textContent || '30.0');
     const boilTimeMin = parseInt(recipeEl.querySelector('BOIL_TIME')?.textContent || '60', 10);
     const efficiencyPercent = parseFloat(recipeEl.querySelector('EFFICIENCY')?.textContent || '72.0');
     const description = recipeEl.querySelector('NOTES')?.textContent?.trim() || '';
@@ -198,7 +198,7 @@ export function importFromBeerXml(xmlString: string): Recipe | null {
     };
 
     const calculated = calculateBrewMetrics({
-      batchSizeL: batchSizeL > 0 ? batchSizeL : 20,
+      batchSizeL: batchSizeL > 0 ? batchSizeL : 30,
       boilTimeMin: boilTimeMin > 0 ? boilTimeMin : 60,
       efficiencyPercent: efficiencyPercent > 0 ? efficiencyPercent : 72,
       grainRatioLPerKg: 3.5,
@@ -221,7 +221,7 @@ export function importFromBeerXml(xmlString: string): Recipe | null {
       category,
       description,
       author: 'Импортировано',
-      batchSizeL: batchSizeL > 0 ? batchSizeL : 20,
+      batchSizeL: batchSizeL > 0 ? batchSizeL : 30,
       boilTimeMin: boilTimeMin > 0 ? boilTimeMin : 60,
       efficiencyPercent: efficiencyPercent > 0 ? efficiencyPercent : 72,
       grainRatioLPerKg: 3.5,
