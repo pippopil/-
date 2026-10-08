@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Globe,
   Search,
@@ -45,6 +45,14 @@ export const OnlineRecipeHubModal: React.FC<Props> = ({
 }) => {
   // Активная вкладка в хабе: 'catalog' | 'url_loader' | 'guide'
   const [activeTab, setActiveTab] = useState<'catalog' | 'url_loader' | 'guide'>('catalog');
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Сброс скролла на начало при открытии или переключении вкладок
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+  }, [activeTab, isOpen]);
 
   // Параметры поиска по онлайн-каталогу
   const [searchQuery, setSearchQuery] = useState('');
@@ -402,7 +410,7 @@ export const OnlineRecipeHubModal: React.FC<Props> = ({
         </div>
 
         {/* Тело модального окна со скроллом */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
           {/* =================== ВКЛАДКА 1: ОНЛАЙН-КАТАЛОГ =================== */}
           {activeTab === 'catalog' && (
             <div className="space-y-4">

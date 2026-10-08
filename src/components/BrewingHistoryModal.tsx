@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   BrewingHistoryMoment,
   getHistoryEraBadge,
@@ -55,6 +55,14 @@ export const BrewingHistoryModal: React.FC<Props> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [expandedMomentId, setExpandedMomentId] = useState<string | null>(initialMomentId || null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Сброс скролла на начало при открытии или смене фильтров (если не задан конкретный момент)
+  useEffect(() => {
+    if (!initialMomentId && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+  }, [isOpen, selectedEra, selectedCategory, initialMomentId]);
 
   // Сортировка по хронологии
   const sortedMoments = useMemo(() => {
@@ -250,7 +258,7 @@ export const BrewingHistoryModal: React.FC<Props> = ({
         </div>
 
         {/* Список исторических карточек */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
           {filteredMoments.length === 0 ? (
             <div className="text-center py-16 text-stone-500 dark:text-stone-400 space-y-3">
               <div className="text-4xl">🔍</div>

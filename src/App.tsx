@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   ActiveTab,
   Navbar
@@ -72,6 +72,47 @@ export default function App() {
 
   // Активная вкладка
   const [activeTab, setActiveTab] = useState<ActiveTab>('calculator');
+
+  // Переключение вкладки с мгновенным сбросом позиции скролла
+  const handleTabChange = useCallback((tab: ActiveTab) => {
+    setActiveTab(tab);
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    if (document.documentElement) {
+      document.documentElement.scrollTop = 0;
+    }
+    if (document.body) {
+      document.body.scrollTop = 0;
+    }
+  }, []);
+
+  // При открытии любой вкладки страница всегда начинается сначала (с самого верха)
+  useEffect(() => {
+    const scrollToPageTop = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      if (document.documentElement) {
+        document.documentElement.scrollTop = 0;
+      }
+      if (document.body) {
+        document.body.scrollTop = 0;
+      }
+      const rootEl = document.getElementById('root');
+      if (rootEl) {
+        rootEl.scrollTop = 0;
+      }
+    };
+
+    // Мгновенный сброс скролла
+    scrollToPageTop();
+
+    // Запуск в следующем кадре для надежности при монтировании нового содержимого DOM
+    const frameId = requestAnimationFrame(scrollToPageTop);
+    const timeoutId = setTimeout(scrollToPageTop, 50);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      clearTimeout(timeoutId);
+    };
+  }, [activeTab]);
 
   // Рецепты (с сохранением в LocalStorage для работы офлайн)
   const [recipes, setRecipes] = useState<Recipe[]>(() => {
@@ -551,7 +592,7 @@ export default function App() {
       {/* Навигационная панель */}
       <Navbar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         isDarkMode={isDarkMode}
         setIsDarkMode={setIsDarkMode}
         onOpenCloudSync={() => setCloudModalOpen(true)}

@@ -82,8 +82,15 @@ export const Navbar: React.FC<Props> = ({
     { id: 'community', label: 'Клуб', icon: Users }
   ];
 
-  const handleMobileTabSelect = (tab: ActiveTab) => {
+  const handleSelectTab = (tab: ActiveTab) => {
     setActiveTab(tab);
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    if (document.documentElement) document.documentElement.scrollTop = 0;
+    if (document.body) document.body.scrollTop = 0;
+  };
+
+  const handleMobileTabSelect = (tab: ActiveTab) => {
+    handleSelectTab(tab);
     setMobileDrawerOpen(false);
   };
 
@@ -96,7 +103,7 @@ export const Navbar: React.FC<Props> = ({
             {/* Logo & Brand */}
             <button
               type="button"
-              onClick={() => setActiveTab('calculator')}
+              onClick={() => handleSelectTab('calculator')}
               className="flex items-center gap-2.5 cursor-pointer text-left focus:outline-none"
             >
               <img
@@ -227,7 +234,7 @@ export const Navbar: React.FC<Props> = ({
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setActiveTab(item.id as ActiveTab)}
+                  onClick={() => handleSelectTab(item.id as ActiveTab)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                     isActive
                       ? 'bg-amber-500 text-white shadow-xs'
@@ -255,7 +262,7 @@ export const Navbar: React.FC<Props> = ({
         <div className="w-full max-w-lg mx-auto grid grid-cols-5 items-center px-1 text-center">
           <button
             type="button"
-            onClick={() => setActiveTab('calculator')}
+            onClick={() => handleSelectTab('calculator')}
             className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl transition-all cursor-pointer min-w-0 active:scale-95 ${
               activeTab === 'calculator'
                 ? 'text-amber-600 dark:text-amber-400 font-extrabold'
@@ -268,7 +275,7 @@ export const Navbar: React.FC<Props> = ({
 
           <button
             type="button"
-            onClick={() => setActiveTab('catalogue')}
+            onClick={() => handleSelectTab('catalogue')}
             className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl transition-all cursor-pointer min-w-0 active:scale-95 ${
               activeTab === 'catalogue'
                 ? 'text-amber-600 dark:text-amber-400 font-extrabold'
@@ -281,7 +288,7 @@ export const Navbar: React.FC<Props> = ({
 
           <button
             type="button"
-            onClick={() => setActiveTab('matcher')}
+            onClick={() => handleSelectTab('matcher')}
             className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl transition-all cursor-pointer min-w-0 active:scale-95 ${
               activeTab === 'matcher'
                 ? 'text-amber-600 dark:text-amber-400 font-extrabold'
@@ -294,7 +301,7 @@ export const Navbar: React.FC<Props> = ({
 
           <button
             type="button"
-            onClick={() => setActiveTab('calendar')}
+            onClick={() => handleSelectTab('calendar')}
             className={`flex flex-col items-center justify-center gap-0.5 py-1 px-1 rounded-xl transition-all cursor-pointer min-w-0 relative active:scale-95 ${
               activeTab === 'calendar'
                 ? 'text-amber-600 dark:text-amber-400 font-extrabold'
