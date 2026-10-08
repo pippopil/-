@@ -3,6 +3,7 @@ import {
   CalculatedBrewParams,
   GrainItem,
   HopItem,
+  Recipe,
   StyleValidation,
   Yeast
 } from '../types/brewing';
@@ -827,4 +828,437 @@ export function scaleRecipeIngredients(
   }));
 
   return { scaledGrains, scaledHops };
+}
+
+/**
+ * Поиск наиболее подходящего стиля BJCP по названию, идентификатору или ключевым словам
+ */
+export function findMatchingBjcpStyle(styleNameOrId: string): BJCPStyle {
+  if (!styleNameOrId) return BJCP_STYLES[0];
+  const query = styleNameOrId.trim().toLowerCase();
+
+  // 1. Точное совпадение по id, name или nameEn
+  const exact = BJCP_STYLES.find(
+    s => s.id.toLowerCase() === query ||
+         s.name.toLowerCase() === query ||
+         s.nameEn.toLowerCase() === query
+  );
+  if (exact) return exact;
+
+  // 2. Частичное совпадение
+  const partial = BJCP_STYLES.find(
+    s => s.name.toLowerCase().includes(query) ||
+         query.includes(s.name.toLowerCase()) ||
+         s.nameEn.toLowerCase().includes(query) ||
+         query.includes(s.nameEn.toLowerCase())
+  );
+  if (partial) return partial;
+
+  // 3. Эвристический подбор по ключевым словам
+  if (query.includes('pils') || query.includes('пилс')) {
+    return BJCP_STYLES.find(s => s.id === 'german_pils') || BJCP_STYLES[0];
+  }
+  if (query.includes('ipa') || query.includes('айпиэй') || query.includes('ипа')) {
+    return BJCP_STYLES.find(s => s.id === 'american_ipa') || BJCP_STYLES[0];
+  }
+  if (query.includes('stout') || query.includes('стаут')) {
+    return BJCP_STYLES.find(s => s.id === 'oatmeal_stout') || BJCP_STYLES[0];
+  }
+  if (query.includes('porter') || query.includes('портер')) {
+    return BJCP_STYLES.find(s => s.id === 'english_porter') || BJCP_STYLES[0];
+  }
+  if (query.includes('weiss') || query.includes('weizen') || query.includes('вайс') || query.includes('пшенич')) {
+    return BJCP_STYLES.find(s => s.id === 'weissbier') || BJCP_STYLES[0];
+  }
+  if (query.includes('dunkel') || query.includes('дункель')) {
+    return BJCP_STYLES.find(s => s.id === 'munich_dunkel') || BJCP_STYLES[0];
+  }
+  if (query.includes('helles') || query.includes('хеллес')) {
+    return BJCP_STYLES.find(s => s.id === 'munich_helles') || BJCP_STYLES[0];
+  }
+  if (query.includes('vienna') || query.includes('венск')) {
+    return BJCP_STYLES.find(s => s.id === 'vienna_lager') || BJCP_STYLES[0];
+  }
+  if (query.includes('lager') || query.includes('лагер')) {
+    return BJCP_STYLES.find(s => s.id === 'czech_pilsner') || BJCP_STYLES[0];
+  }
+  if (query.includes('pale ale') || query.includes('пэйл') || query.includes('apa')) {
+    return BJCP_STYLES.find(s => s.id === 'american_pale_ale') || BJCP_STYLES[0];
+  }
+  if (query.includes('gose') || query.includes('гозе')) {
+    return BJCP_STYLES.find(s => s.id === 'historical_gose') || BJCP_STYLES[0];
+  }
+  if (query.includes('saison') || query.includes('сезон')) {
+    return BJCP_STYLES.find(s => s.id === 'saison') || BJCP_STYLES[0];
+  }
+
+  return BJCP_STYLES[0];
+}
+
+export interface BalanceRecipeOptions {
+  balanceGrains?: boolean;
+  balanceHops?: boolean;
+  balanceYeast?: boolean;
+}
+
+/**
+ * Автоматическая балансировка и корректировка рецепта под выбранный стиль BJCP в 1 клик
+ * Интеллектуально балансирует:
+ * - Засыпь солода: вес пересчитывается для достижения эталонной НП (OG);
+ * - Цветность (EBC): добавляет/корректирует специальные солода в стиль;
+ * - Хмели: регулирует горечь (IBU) и баланс BU:GU под профиль стиля;
+ * - Дрожжи: оптимизирует аттенюацию для попадания в КП (FG) и алкоголь (ABV);
+ * - Полный перерасчет всех технологических параметров варки.
+ */
+export function balanceRecipeForStyle(
+  recipe: Recipe,
+  options: BalanceRecipeOptions = {}
+): {
+  balancedRecipe: Recipe;
+  changesSummary: string[];
+} {
+  const doGrains = options.balanceGrains !== false;
+  const doHops = options.balanceHops !== false;
+  const doYeast = options.balanceYeast !== false;
+
+  const targetStyle = findMatchingBjcpStyle(recipe.style);
+
+  // 1. Целевые параметры стиля
+  const targetOg = Number(((targetStyle.ogRange[0] + targetStyle.ogRange[1]) / 2).toFixed(3));
+  const targetOgPoints = (targetOg - 1.0) * 1000;
+  const targetEbc = Number(((targetStyle.ebcRange[0] + targetStyle.ebcRange[1]) / 2).toFixed(1));
+
+  // Идеальный баланс горечи BU:GU
+  const avgBuGu = (targetStyle.buGuRatioRange[0] + targetStyle.buGuRatioRange[1]) / 2;
+  const calculatedTargetIbu = Math.round(targetOgPoints * avgBuGu);
+  const targetIbu = Math.max(targetStyle.ibuRange[0], Math.min(targetStyle.ibuRange[1], calculatedTargetIbu));
+
+  const batchSizeL = Math.max(1, recipe.batchSizeL);
+  const batchSizeGal = batchSizeL * 0.264172;
+  const effFactor = Math.max(0.4, (recipe.efficiencyPercent || 75) / 100);
+
+  // 2. Дрожжи: аттенюация и попадание в крепость ABV
+  const updatedYeast: Yeast = { ...recipe.yeast };
+  if (doYeast) {
+    const targetAbv = (targetStyle.abvRange[0] + targetStyle.abvRange[1]) / 2;
+    // Требуемая разность плотности: ABV = (OG - FG) * 131.25 => OG - FG = ABV / 131.25
+    const neededOgFgDelta = targetAbv / 131.25;
+    const targetFgSg = targetOg - neededOgFgDelta;
+    const targetFgPoints = (targetFgSg - 1.0) * 1000;
+    let idealAttenuation = Math.round((1.0 - targetFgPoints / targetOgPoints) * 100);
+    idealAttenuation = Math.max(68, Math.min(84, idealAttenuation));
+    updatedYeast.attenuationPercent = idealAttenuation;
+
+    if (targetStyle.fermentationType === 'lager' && updatedYeast.type !== 'lager') {
+      updatedYeast.type = 'lager';
+      updatedYeast.tempRange = [10, 14];
+      if (updatedYeast.name.toLowerCase().includes('05') || updatedYeast.name.toLowerCase().includes('ale')) {
+        updatedYeast.name = 'Saflager W-34/70';
+        updatedYeast.lab = 'Fermentis';
+      }
+    }
+  }
+
+  // 3. Корректировка зерновой засыпи (Grains)
+  let adjustedGrains: GrainItem[] = recipe.grains.map(g => ({ ...g }));
+
+  if (doGrains) {
+    // Если засыпь пустая — создаем базовый солод
+  if (adjustedGrains.length === 0) {
+    const isWheat = targetStyle.id.includes('weiss') || targetStyle.id.includes('wit');
+    const isLager = targetStyle.fermentationType === 'lager';
+    if (isWheat) {
+      adjustedGrains = [
+        { id: `grain_${Date.now()}_1`, name: 'Пшеничный светлый (Wheat Malt)', weightKg: 2.5, potentialSg: 1.038, colorEbc: 4.0, type: 'wheat' },
+        { id: `grain_${Date.now()}_2`, name: 'Pilsner Malt (Пилснер)', weightKg: 2.5, potentialSg: 1.037, colorEbc: 3.5, type: 'base' }
+      ];
+    } else if (isLager) {
+      adjustedGrains = [
+        { id: `grain_${Date.now()}_1`, name: 'Pilsner Malt (Пилснер)', weightKg: 5.0, potentialSg: 1.037, colorEbc: 3.5, type: 'base' }
+      ];
+    } else {
+      adjustedGrains = [
+        { id: `grain_${Date.now()}_1`, name: 'Pale Ale Malt (Пэйл Эль)', weightKg: 5.0, potentialSg: 1.038, colorEbc: 6.0, type: 'base' }
+      ];
+    }
+  }
+
+  // 3a. Сначала масштабируем засыпь для достижения целевой плотности (OG)
+  let currentPoints = adjustedGrains.reduce((sum, g) => {
+    const ptsPerLb = (g.potentialSg - 1.0) * 1000;
+    return sum + (ptsPerLb * (g.weightKg * 2.20462) * effFactor) / batchSizeGal;
+  }, 0);
+
+  if (currentPoints <= 0) currentPoints = 1;
+  const ogScale = targetOgPoints / currentPoints;
+
+  adjustedGrains = adjustedGrains.map(g => ({
+    ...g,
+    weightKg: Math.max(0.05, Number((g.weightKg * ogScale).toFixed(2)))
+  }));
+
+  // 3b. Оценка и балансировка цветности (EBC)
+  const getGristMcu = (grist: GrainItem[]) => grist.reduce((sum, g) => {
+    const weightLbs = g.weightKg * 2.20462;
+    const lovibond = g.colorEbc / 1.97;
+    return sum + (weightLbs * lovibond) / batchSizeGal;
+  }, 0);
+
+  const getGristEbc = (grist: GrainItem[]) => {
+    const mcu = getGristMcu(grist);
+    const srm = mcu > 0 ? 1.4922 * Math.pow(mcu, 0.6859) : 2.0;
+    return Number((srm * 1.97).toFixed(1));
+  };
+
+  const currentEbc = getGristEbc(adjustedGrains);
+
+  // Если цвет ниже допустимого диапазона стиля
+  if (currentEbc < targetStyle.ebcRange[0]) {
+    const targetMidEbc = (targetStyle.ebcRange[0] + targetStyle.ebcRange[1]) / 2;
+    const targetSrm = targetMidEbc / 1.97;
+    const targetMcu = Math.pow(targetSrm / 1.4922, 1 / 0.6859);
+    const currentMcu = getGristMcu(adjustedGrains);
+    const deltaMcu = Math.max(0, targetMcu - currentMcu);
+
+    const mainBaseGrain = adjustedGrains.reduce((prev, curr) => (curr.weightKg > prev.weightKg ? curr : prev), adjustedGrains[0]);
+    const baseColor = mainBaseGrain ? mainBaseGrain.colorEbc : 4.0;
+
+    const existingSpecialty = adjustedGrains.find(g => g.colorEbc >= 25);
+    if (existingSpecialty) {
+      const specLovibond = existingSpecialty.colorEbc / 1.97;
+      const baseLovibond = baseColor / 1.97;
+      const diffLovibond = Math.max(1, specLovibond - baseLovibond);
+      const addedLbs = (deltaMcu * batchSizeGal) / diffLovibond;
+      const addedKg = Math.max(0.05, Number((addedLbs / 2.20462).toFixed(2)));
+      existingSpecialty.weightKg = Number((existingSpecialty.weightKg + addedKg).toFixed(2));
+      if (mainBaseGrain && mainBaseGrain !== existingSpecialty && mainBaseGrain.weightKg > addedKg + 0.5) {
+        mainBaseGrain.weightKg = Number((mainBaseGrain.weightKg - addedKg).toFixed(2));
+      }
+    } else {
+      let specName = 'Munich II (Мюнхенский темный 25 EBC)';
+      let specColor = 25.0;
+      let specType: 'base' | 'caramel' | 'roasted' = 'base';
+      let specPotential = 1.035;
+
+      if (targetMidEbc >= 45) {
+        specName = 'Chocolate Malt (Шоколадный 900 EBC)';
+        specColor = 900.0;
+        specType = 'roasted';
+        specPotential = 1.028;
+      } else if (targetMidEbc >= 18) {
+        specName = 'Caramunich III (Карамюнхен 150 EBC)';
+        specColor = 150.0;
+        specType = 'caramel';
+        specPotential = 1.033;
+      } else {
+        specName = 'Carared (Караред 50 EBC)';
+        specColor = 50.0;
+        specType = 'caramel';
+        specPotential = 1.034;
+      }
+
+      const specLovibond = specColor / 1.97;
+      const baseLovibond = baseColor / 1.97;
+      const diffLovibond = Math.max(1, specLovibond - baseLovibond);
+      const addedLbs = (deltaMcu * batchSizeGal) / diffLovibond;
+      const addedKg = Math.max(0.05, Number((addedLbs / 2.20462).toFixed(2)));
+
+      adjustedGrains.push({
+        id: `grain_spec_${Date.now()}`,
+        name: specName,
+        weightKg: addedKg,
+        potentialSg: specPotential,
+        colorEbc: specColor,
+        type: specType
+      });
+
+      if (mainBaseGrain && mainBaseGrain.weightKg > addedKg + 0.5) {
+        mainBaseGrain.weightKg = Number((mainBaseGrain.weightKg - addedKg).toFixed(2));
+      }
+    }
+  } else if (currentEbc > targetStyle.ebcRange[1]) {
+    // Если цвет слишком темный для стиля
+    const excessFactor = (targetStyle.ebcRange[1] * 0.95) / currentEbc;
+    adjustedGrains = adjustedGrains.map(g => {
+      if (g.colorEbc > 20) {
+        return { ...g, weightKg: Math.max(0.05, Number((g.weightKg * excessFactor).toFixed(2))) };
+      }
+      return g;
+    });
+  }
+
+  // 3c. Финальная точная доводка плотности (OG) на базовом солоде
+  const finalPoints = adjustedGrains.reduce((sum, g) => {
+    const ptsPerLb = (g.potentialSg - 1.0) * 1000;
+    return sum + (ptsPerLb * (g.weightKg * 2.20462) * effFactor) / batchSizeGal;
+  }, 0);
+
+    const mainBase = adjustedGrains.reduce((prev, curr) => (curr.weightKg > prev.weightKg ? curr : prev), adjustedGrains[0]);
+    if (mainBase) {
+      const diffPoints = targetOgPoints - finalPoints;
+      const ptsPerKg = ((mainBase.potentialSg - 1.0) * 1000 * 2.20462 * effFactor) / batchSizeGal;
+      if (ptsPerKg > 0) {
+        const kgDelta = diffPoints / ptsPerKg;
+        mainBase.weightKg = Math.max(0.1, Number((mainBase.weightKg + kgDelta).toFixed(2)));
+      }
+    }
+  }
+
+  // 4. Корректировка хмеля (Hops) под горечь IBU
+  let adjustedHops: HopItem[] = recipe.hops.map(h => ({ ...h }));
+
+  if (doHops) {
+    const bignessFactor = 1.65 * Math.pow(0.000125, targetOg - 1.0);
+
+    const calcHopIbu = (h: HopItem): number => {
+      if (h.use === 'dry_hop') return 0;
+      const time = h.use === 'whirlpool' ? 10 : Math.max(0, h.boilTimeMin);
+      const boilFactor = (1.0 - Math.exp(-0.04 * time)) / 4.15;
+      const util = bignessFactor * boilFactor;
+      return (util * (h.alphaAcid / 100) * h.weightG * 1000) / batchSizeL;
+    };
+
+    const currentHopIbu = adjustedHops.reduce((sum, h) => sum + calcHopIbu(h), 0);
+
+    // Если хмеля нет или IBU равен 0
+    if (adjustedHops.length === 0 || currentHopIbu <= 0) {
+      let hopName = 'Magnum';
+      let alphaAcid = 12.0;
+      if (targetStyle.fermentationType === 'lager' || targetStyle.id.includes('pils')) {
+        hopName = 'Saaz (Жатецкий)';
+        alphaAcid = 3.8;
+      } else if (targetStyle.id.includes('ipa') || targetStyle.category.includes('IPA')) {
+        hopName = 'Cascade';
+        alphaAcid = 6.5;
+      } else if (targetStyle.id.includes('english') || targetStyle.id.includes('porter')) {
+        hopName = 'East Kent Goldings';
+        alphaAcid = 5.0;
+      }
+
+      const time = 60;
+      const boilFactor = (1.0 - Math.exp(-0.04 * time)) / 4.15;
+      const util = bignessFactor * boilFactor;
+      const weightG = Math.max(5, Math.round((targetIbu * batchSizeL) / (util * (alphaAcid / 100) * 1000)));
+
+      adjustedHops = [
+        {
+          id: `hop_${Date.now()}`,
+          name: hopName,
+          weightG,
+          alphaAcid,
+          boilTimeMin: 60,
+          use: 'boil'
+        }
+      ];
+    } else {
+      // Если хмели есть: масштабируем варочные хмели на горечь (boilTime >= 20 мин)
+      const bitteringHops = adjustedHops.filter(h => h.use === 'boil' && h.boilTimeMin >= 20);
+      const aromaHops = adjustedHops.filter(h => h.use !== 'boil' || h.boilTimeMin < 20);
+      const aromaIbu = aromaHops.reduce((sum, h) => sum + calcHopIbu(h), 0);
+
+      const neededBitteringIbu = Math.max(0, targetIbu - aromaIbu);
+      const currentBitteringIbu = bitteringHops.reduce((sum, h) => sum + calcHopIbu(h), 0);
+
+      if (currentBitteringIbu > 0) {
+        const hopRatio = neededBitteringIbu / currentBitteringIbu;
+        adjustedHops = adjustedHops.map(h => {
+          if (h.use === 'boil' && h.boilTimeMin >= 20) {
+            return { ...h, weightG: Math.max(1, Math.round(h.weightG * hopRatio)) };
+          }
+          return h;
+        });
+      } else {
+        // Масштабируем все кипяченые хмели
+        const hopRatio = targetIbu / Math.max(1, currentHopIbu);
+        adjustedHops = adjustedHops.map(h => {
+          if (h.use !== 'dry_hop') {
+            return { ...h, weightG: Math.max(1, Math.round(h.weightG * hopRatio)) };
+          }
+          return h;
+        });
+      }
+
+      // Тонкая подгонка IBU на основном хмеле
+      const newHopIbu = Math.round(adjustedHops.reduce((sum, h) => sum + calcHopIbu(h), 0));
+      if (newHopIbu !== targetIbu) {
+        const mainHop = adjustedHops.find(h => h.use === 'boil' && h.boilTimeMin >= 30) || adjustedHops[0];
+        if (mainHop && mainHop.use !== 'dry_hop') {
+          const time = mainHop.use === 'whirlpool' ? 10 : mainHop.boilTimeMin;
+          const boilFactor = (1.0 - Math.exp(-0.04 * time)) / 4.15;
+          const util = bignessFactor * boilFactor;
+          const ibuPerGram = (util * (mainHop.alphaAcid / 100) * 1000) / batchSizeL;
+          if (ibuPerGram > 0) {
+            const deltaG = Math.round((targetIbu - newHopIbu) / ibuPerGram);
+            mainHop.weightG = Math.max(1, mainHop.weightG + deltaG);
+          }
+        }
+      }
+    }
+  }
+
+  // 5. Пересчет итоговых параметров
+  const recalculated = calculateBrewMetrics({
+    batchSizeL,
+    boilTimeMin: recipe.boilTimeMin,
+    efficiencyPercent: recipe.efficiencyPercent,
+    grainRatioLPerKg: recipe.grainRatioLPerKg,
+    grainTempC: recipe.grainTempC,
+    targetCarbonationVol: recipe.targetCarbonationVol,
+    beerTempAtBottlingC: recipe.beerTempAtBottlingC,
+    grains: adjustedGrains,
+    hops: adjustedHops,
+    yeast: updatedYeast
+  });
+
+  // 6. Формирование списка сделанных изменений
+  const changesSummary: string[] = [];
+  const oldCalc = recipe.calculated;
+
+  if (Math.abs(oldCalc.ogSg - recalculated.ogSg) >= 0.001) {
+    changesSummary.push(
+      `НП (OG) скорректирована: ${oldCalc.ogSg.toFixed(3)} ➔ ${recalculated.ogSg.toFixed(3)} SG (${recalculated.ogPlato}°P)`
+    );
+  }
+
+  if (Math.abs(oldCalc.totalGrainWeightKg - recalculated.totalGrainWeightKg) >= 0.05) {
+    changesSummary.push(
+      `Засыпь солода сбалансирована: ${oldCalc.totalGrainWeightKg.toFixed(2)} кг ➔ ${recalculated.totalGrainWeightKg.toFixed(2)} кг`
+    );
+  }
+
+  if (Math.abs(oldCalc.ibu - recalculated.ibu) >= 1) {
+    changesSummary.push(
+      `Горечь выровнена: ${oldCalc.ibu} ➔ ${recalculated.ibu} IBU (баланс BU:GU: ${recalculated.buGuRatio.toFixed(2)})`
+    );
+  }
+
+  if (Math.abs(oldCalc.ebc - recalculated.ebc) >= 0.5) {
+    changesSummary.push(
+      `Цветность оптимизирована: ${oldCalc.ebc} ➔ ${recalculated.ebc} EBC`
+    );
+  }
+
+  if (Math.abs(oldCalc.abv - recalculated.abv) >= 0.2) {
+    changesSummary.push(
+      `Крепость приведена к стандарту: ${oldCalc.abv}% ➔ ${recalculated.abv}% ABV`
+    );
+  }
+
+  if (changesSummary.length === 0) {
+    changesSummary.push(`Рецепт гармонично скорректирован под эталонные рамки стиля «${targetStyle.name}».`);
+  }
+
+  const balancedRecipe: Recipe = {
+    ...recipe,
+    grains: adjustedGrains,
+    hops: adjustedHops,
+    yeast: updatedYeast,
+    calculated: recalculated,
+    updatedAt: new Date().toISOString()
+  };
+
+  return {
+    balancedRecipe,
+    changesSummary
+  };
 }

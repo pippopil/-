@@ -3,9 +3,11 @@ import {
   sgToPlato,
   platoToSg,
   ebcToHex,
-  calculateBrewMetrics
+  calculateBrewMetrics,
+  validateRecipeAgainstStyle,
+  balanceRecipeForStyle
 } from '../src/utils/brewingMath';
-import { GrainItem, HopItem, Yeast } from '../src/types/brewing';
+import { GrainItem, HopItem, Recipe, Yeast } from '../src/types/brewing';
 
 describe('Brewing Math Unit Tests (Калькулятор МастерВарка)', () => {
   describe('Конвертация плотности (Plato / SG)', () => {
@@ -118,6 +120,356 @@ describe('Brewing Math Unit Tests (Калькулятор МастерВарка
       expect(result.spargeWaterL).toBeGreaterThan(5);
       // Температура заторной воды выше 65°C для попадания в паузу 67°C
       expect(result.strikeTempC).toBeGreaterThan(67);
+    });
+  });
+
+  describe('balanceRecipeForStyle (Балансировка рецепта под стиль в 1 клик)', () => {
+    it('корректирует рецепт с заниженной плотностью и горечью под Чешский Пилснер', () => {
+      // Исходный рецепт: плотность всего ~1.025, горечь 4 IBU (явные замечания для Пилснера)
+      const weakGrains: GrainItem[] = [
+        { id: 'g1', name: 'Pilsner Malt', weightKg: 2.2, potentialSg: 1.037, colorEbc: 3.5, type: 'base' }
+      ];
+      const weakHops: HopItem[] = [
+        { id: 'h1', name: 'Saaz', weightG: 10, alphaAcid: 3.5, boilTimeMin: 15, use: 'boil' }
+      ];
+      const yeast: Yeast = {
+        name: 'Saflager W-34/70',
+        lab: 'Fermentis',
+        form: 'dry',
+        type: 'lager',
+        cellsPerGramOrVial: 20,
+        attenuationPercent: 78,
+        tempRange: [10, 14]
+      };
+
+      const initialCalc = calculateBrewMetrics({
+        batchSizeL: 20,
+        boilTimeMin: 60,
+        efficiencyPercent: 75,
+        grainRatioLPerKg: 3.5,
+        grainTempC: 20,
+        targetCarbonationVol: 2.4,
+        beerTempAtBottlingC: 12,
+        grains: weakGrains,
+        hops: weakHops,
+        yeast
+      });
+
+      const unbalanceRecipe: Recipe = {
+        id: 'test_pils',
+        name: 'Тестовый слабый пилс',
+        style: 'Чешский светлый премиум-лагер (Пилснер)',
+        category: 'Лагеры',
+        tags: ['Лагер', 'Пилснер'],
+        description: 'Слабый рецепт с замечаниями',
+        author: 'Тестер',
+        batchSizeL: 20,
+        boilTimeMin: 60,
+        efficiencyPercent: 75,
+        grainRatioLPerKg: 3.5,
+        grainTempC: 20,
+        targetCarbonationVol: 2.4,
+        beerTempAtBottlingC: 12,
+        grains: weakGrains,
+        hops: weakHops,
+        mashSchedule: [],
+        yeast,
+        calculated: initialCalc,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      // Проверяем, что до балансировки есть замечания
+      const beforeValidation = validateRecipeAgainstStyle(unbalanceRecipe.calculated, unbalanceRecipe.style);
+      expect(beforeValidation.isCompliant).toBe(false);
+      expect(beforeValidation.recommendations.length).toBeGreaterThan(0);
+
+      // Выполняем авто-балансировку в 1 клик
+      const { balancedRecipe, changesSummary } = balanceRecipeForStyle(unbalanceRecipe);
+
+      // Проверяем результат
+      expect(changesSummary.length).toBeGreaterThan(0);
+      const afterValidation = validateRecipeAgainstStyle(balancedRecipe.calculated, balancedRecipe.style);
+      expect(afterValidation.isCompliant).toBe(true);
+      expect(balancedRecipe.calculated.ogSg).toBeGreaterThanOrEqual(1.044);
+      expect(balancedRecipe.calculated.ogSg).toBeLessThanOrEqual(1.060);
+      expect(balancedRecipe.calculated.ibu).toBeGreaterThanOrEqual(30);
+      expect(balancedRecipe.calculated.ibu).toBeLessThanOrEqual(45);
+      expect(balancedRecipe.calculated.ebc).toBeGreaterThanOrEqual(7);
+      expect(balancedRecipe.calculated.ebc).toBeLessThanOrEqual(14);
+    });
+
+    it('корректирует рецепт овсяного стаута, добавляя цвет и поднимая плотность/горечь', () => {
+      // Исходный рецепт: светлый солод, цвет всего ~6 EBC, стиль Овсяный стаут требует от 45 до 80 EBC
+      const paleGrains: GrainItem[] = [
+        { id: 'g1', name: 'Pale Ale Malt', weightKg: 3.0, potentialSg: 1.038, colorEbc: 5.5, type: 'base' }
+      ];
+      const hops: HopItem[] = [
+        { id: 'h1', name: 'Fuggle', weightG: 15, alphaAcid: 4.5, boilTimeMin: 60, use: 'boil' }
+      ];
+      const yeast: Yeast = {
+        name: 'US-05 SafAle',
+        lab: 'Fermentis',
+        form: 'dry',
+        type: 'ale',
+        cellsPerGramOrVial: 20,
+        attenuationPercent: 75,
+        tempRange: [18, 22]
+      };
+
+      const initialCalc = calculateBrewMetrics({
+        batchSizeL: 20,
+        boilTimeMin: 60,
+        efficiencyPercent: 75,
+        grainRatioLPerKg: 3.5,
+        grainTempC: 20,
+        targetCarbonationVol: 2.0,
+        beerTempAtBottlingC: 18,
+        grains: paleGrains,
+        hops,
+        yeast
+      });
+
+      const unbalanceRecipe: Recipe = {
+        id: 'test_stout',
+        name: 'Светлый недо-стаут',
+        style: 'Овсяный стаут (Oatmeal Stout)',
+        category: 'Стауты',
+        tags: ['Стаут', 'Овсяный'],
+        description: 'Стаут без темных солодов',
+        author: 'Тестер',
+        batchSizeL: 20,
+        boilTimeMin: 60,
+        efficiencyPercent: 75,
+        grainRatioLPerKg: 3.5,
+        grainTempC: 20,
+        targetCarbonationVol: 2.0,
+        beerTempAtBottlingC: 18,
+        grains: paleGrains,
+        hops,
+        mashSchedule: [],
+        yeast,
+        calculated: initialCalc,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      const beforeValidation = validateRecipeAgainstStyle(unbalanceRecipe.calculated, unbalanceRecipe.style);
+      expect(beforeValidation.isCompliant).toBe(false);
+
+      const { balancedRecipe } = balanceRecipeForStyle(unbalanceRecipe);
+      const afterValidation = validateRecipeAgainstStyle(balancedRecipe.calculated, balancedRecipe.style);
+
+      expect(afterValidation.isCompliant).toBe(true);
+      expect(balancedRecipe.calculated.ebc).toBeGreaterThanOrEqual(45);
+      expect(balancedRecipe.calculated.ogSg).toBeGreaterThanOrEqual(1.045);
+      expect(balancedRecipe.calculated.ibu).toBeGreaterThanOrEqual(25);
+    });
+
+    it('балансирует пустой шаблон рецепта (0 солодов, 0 хмелей) под Немецкий Пилс', () => {
+      const emptyRecipe: Recipe = {
+        id: 'test_empty',
+        name: 'Пустой рецепт',
+        style: 'Немецкий пилс (German Pils)',
+        category: 'Лагеры',
+        tags: ['Лагер', 'Пилс'],
+        description: '',
+        author: 'Тестер',
+        batchSizeL: 20,
+        boilTimeMin: 60,
+        efficiencyPercent: 75,
+        grainRatioLPerKg: 3.5,
+        grainTempC: 20,
+        targetCarbonationVol: 2.4,
+        beerTempAtBottlingC: 12,
+        grains: [],
+        hops: [],
+        mashSchedule: [],
+        yeast: {
+          name: 'US-05',
+          lab: 'Fermentis',
+          form: 'dry',
+          type: 'ale',
+          cellsPerGramOrVial: 20,
+          attenuationPercent: 75,
+          tempRange: [18, 22]
+        },
+        calculated: calculateBrewMetrics({
+          batchSizeL: 20,
+          boilTimeMin: 60,
+          efficiencyPercent: 75,
+          grainRatioLPerKg: 3.5,
+          grainTempC: 20,
+          targetCarbonationVol: 2.4,
+          beerTempAtBottlingC: 12,
+          grains: [],
+          hops: [],
+          yeast: {
+            name: 'US-05',
+            lab: 'Fermentis',
+            form: 'dry',
+            type: 'ale',
+            cellsPerGramOrVial: 20,
+            attenuationPercent: 75,
+            tempRange: [18, 22]
+          }
+        }),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      const { balancedRecipe } = balanceRecipeForStyle(emptyRecipe);
+      expect(balancedRecipe.grains.length).toBeGreaterThan(0);
+      expect(balancedRecipe.hops.length).toBeGreaterThan(0);
+      expect(balancedRecipe.yeast.type).toBe('lager');
+      const validation = validateRecipeAgainstStyle(balancedRecipe.calculated, balancedRecipe.style);
+      expect(validation.isCompliant).toBe(true);
+    });
+
+    it('позволяет авто-балансировать только зерно (плотность) без изменения хмеля', () => {
+      const originalHops: HopItem[] = [
+        { id: 'h1', name: 'Saaz', weightG: 33, alphaAcid: 3.8, boilTimeMin: 60, use: 'boil' }
+      ];
+      const undergravityGrains: GrainItem[] = [
+        { id: 'g1', name: 'Pilsner', weightKg: 2.0, potentialSg: 1.037, colorEbc: 3.5, type: 'base' }
+      ];
+
+      const recipe: Recipe = {
+        id: 'r_grains_only',
+        name: 'Низкая плотность',
+        style: 'Немецкий пилс (German Pils)',
+        category: 'Лагеры',
+        tags: [],
+        description: '',
+        author: 'Тестер',
+        batchSizeL: 20,
+        boilTimeMin: 60,
+        efficiencyPercent: 75,
+        grainRatioLPerKg: 3.5,
+        grainTempC: 20,
+        targetCarbonationVol: 2.4,
+        beerTempAtBottlingC: 12,
+        grains: undergravityGrains,
+        hops: originalHops,
+        mashSchedule: [],
+        yeast: {
+          name: 'W-34/70',
+          lab: 'Fermentis',
+          form: 'dry',
+          type: 'lager',
+          cellsPerGramOrVial: 20,
+          attenuationPercent: 78,
+          tempRange: [10, 14]
+        },
+        calculated: calculateBrewMetrics({
+          batchSizeL: 20,
+          boilTimeMin: 60,
+          efficiencyPercent: 75,
+          grainRatioLPerKg: 3.5,
+          grainTempC: 20,
+          targetCarbonationVol: 2.4,
+          beerTempAtBottlingC: 12,
+          grains: undergravityGrains,
+          hops: originalHops,
+          yeast: {
+            name: 'W-34/70',
+            lab: 'Fermentis',
+            form: 'dry',
+            type: 'lager',
+            cellsPerGramOrVial: 20,
+            attenuationPercent: 78,
+            tempRange: [10, 14]
+          }
+        }),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      const { balancedRecipe, changesSummary } = balanceRecipeForStyle(recipe, {
+        balanceGrains: true,
+        balanceHops: false,
+        balanceYeast: false
+      });
+
+      // Вес зерна увеличился для достижения нужной НП
+      expect(balancedRecipe.calculated.ogSg).toBeGreaterThanOrEqual(1.044);
+      expect(balancedRecipe.calculated.ogSg).toBeLessThanOrEqual(1.050);
+      // Хмель не изменился
+      expect(balancedRecipe.hops[0].weightG).toBe(33);
+      expect(changesSummary.some(s => s.includes('НП (OG)'))).toBe(true);
+    });
+
+    it('позволяет авто-балансировать только хмель (горечь) без изменения засыпи', () => {
+      const originalGrains: GrainItem[] = [
+        { id: 'g1', name: 'Pilsner', weightKg: 4.8, potentialSg: 1.037, colorEbc: 3.5, type: 'base' }
+      ];
+      const underbitterHops: HopItem[] = [
+        { id: 'h1', name: 'Saaz', weightG: 5, alphaAcid: 3.8, boilTimeMin: 60, use: 'boil' }
+      ];
+
+      const recipe: Recipe = {
+        id: 'r_hops_only',
+        name: 'Низкая горечь',
+        style: 'Чешский светлый премиум лагер (Czech Premium Pale Lager)',
+        category: 'Лагеры',
+        tags: [],
+        description: '',
+        author: 'Тестер',
+        batchSizeL: 20,
+        boilTimeMin: 60,
+        efficiencyPercent: 75,
+        grainRatioLPerKg: 3.5,
+        grainTempC: 20,
+        targetCarbonationVol: 2.4,
+        beerTempAtBottlingC: 12,
+        grains: originalGrains,
+        hops: underbitterHops,
+        mashSchedule: [],
+        yeast: {
+          name: 'W-34/70',
+          lab: 'Fermentis',
+          form: 'dry',
+          type: 'lager',
+          cellsPerGramOrVial: 20,
+          attenuationPercent: 78,
+          tempRange: [10, 14]
+        },
+        calculated: calculateBrewMetrics({
+          batchSizeL: 20,
+          boilTimeMin: 60,
+          efficiencyPercent: 75,
+          grainRatioLPerKg: 3.5,
+          grainTempC: 20,
+          targetCarbonationVol: 2.4,
+          beerTempAtBottlingC: 12,
+          grains: originalGrains,
+          hops: underbitterHops,
+          yeast: {
+            name: 'W-34/70',
+            lab: 'Fermentis',
+            form: 'dry',
+            type: 'lager',
+            cellsPerGramOrVial: 20,
+            attenuationPercent: 78,
+            tempRange: [10, 14]
+          }
+        }),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      const { balancedRecipe, changesSummary } = balanceRecipeForStyle(recipe, {
+        balanceGrains: false,
+        balanceHops: true,
+        balanceYeast: false
+      });
+
+      // Хмель скорректирован для попадания в диапазон 30-45 IBU
+      expect(balancedRecipe.calculated.ibu).toBeGreaterThanOrEqual(30);
+      expect(balancedRecipe.calculated.ibu).toBeLessThanOrEqual(45);
+      // Зерно не изменилось
+      expect(balancedRecipe.grains[0].weightKg).toBe(4.8);
+      expect(changesSummary.some(s => s.includes('Горечь'))).toBe(true);
     });
   });
 });

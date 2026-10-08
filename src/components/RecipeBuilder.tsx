@@ -12,7 +12,8 @@ import {
   calculateBrewMetrics,
   ebcToHex,
   scaleRecipeIngredients,
-  validateRecipeAgainstStyle
+  validateRecipeAgainstStyle,
+  balanceRecipeForStyle
 } from '../utils/brewingMath';
 import { COMMON_GRAINS, COMMON_HOPS, COMMON_YEASTS } from '../data/defaultData';
 import {
@@ -76,6 +77,30 @@ export const RecipeBuilder: React.FC<Props> = ({
   const [substitutionsGuideOpen, setSubstitutionsGuideOpen] = useState(false);
   const [guideActiveTab, setGuideActiveTab] = useState<'kursk' | 'hops'>('kursk');
   const [guideSearch, setGuideSearch] = useState('');
+  const [balanceNotice, setBalanceNotice] = useState<string[] | null>(null);
+  const [previousRecipeState, setPreviousRecipeState] = useState<Recipe | null>(null);
+
+  const handleAutoBalanceRecipe = (target?: 'all' | 'grains' | 'hops') => {
+    const isGrainsOnly = target === 'grains';
+    const isHopsOnly = target === 'hops';
+    setPreviousRecipeState(JSON.parse(JSON.stringify(recipe)));
+    const opts = {
+      balanceGrains: !isHopsOnly,
+      balanceHops: !isGrainsOnly,
+      balanceYeast: !isGrainsOnly && !isHopsOnly
+    };
+    const { balancedRecipe, changesSummary } = balanceRecipeForStyle(recipe, opts);
+    onUpdateRecipe(balancedRecipe);
+    setBalanceNotice(changesSummary);
+  };
+
+  const handleUndoBalance = () => {
+    if (previousRecipeState) {
+      onUpdateRecipe(previousRecipeState);
+      setPreviousRecipeState(null);
+      setBalanceNotice(null);
+    }
+  };
 
   // Пересчет показателей при любом изменении
   const updateParams = (fields: Partial<Recipe>) => {
@@ -628,14 +653,14 @@ export const RecipeBuilder: React.FC<Props> = ({
       </div>
 
       {/* Валидатор сбалансированности по BJCP */}
-      <div className={`p-4 rounded-2xl border transition-all ${
+      <div className={`p-4 sm:p-5 rounded-2xl border transition-all ${
         validation.isCompliant
           ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/60'
           : 'bg-amber-50/80 dark:bg-amber-950/25 border-amber-300 dark:border-amber-800/70'
       }`}>
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
-            <div className="p-2 rounded-xl bg-white dark:bg-stone-800 shadow-xs mt-0.5">
+            <div className="p-2 rounded-xl bg-white dark:bg-stone-800 shadow-xs mt-0.5 shrink-0">
               {validation.isCompliant ? (
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               ) : (
@@ -643,7 +668,7 @@ export const RecipeBuilder: React.FC<Props> = ({
               )}
             </div>
             <div>
-              <div className="font-bold text-sm text-stone-900 dark:text-stone-100 flex items-center gap-2">
+              <div className="font-bold text-sm text-stone-900 dark:text-stone-100 flex items-center flex-wrap gap-2">
                 <span>Проверка соответствия стилю «{recipe.style}»</span>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
                   validation.isCompliant
@@ -665,7 +690,56 @@ export const RecipeBuilder: React.FC<Props> = ({
               )}
             </div>
           </div>
+
+          {/* Быстрое действие: Балансировка в 1 клик при замечаниях */}
+          <div className="flex items-center gap-2 self-start lg:self-center shrink-0">
+            {!validation.isCompliant ? (
+              <button
+                type="button"
+                onClick={() => handleAutoBalanceRecipe('all')}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 active:scale-[0.98] text-white font-bold text-xs shadow-sm hover:shadow transition-all flex items-center gap-2 cursor-pointer"
+                title="Автоматически скорректировать засыпь, цвет, хмели и плотность в 1 клик"
+              >
+                <Sparkles className="w-4 h-4 text-amber-200 animate-pulse" />
+                <span>Скорректировать рецепт (сбалансировать)</span>
+              </button>
+            ) : previousRecipeState ? (
+              <button
+                type="button"
+                onClick={handleUndoBalance}
+                className="px-3.5 py-2 rounded-xl border border-stone-300 dark:border-stone-700 hover:bg-white dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
+                title="Вернуть предыдущие значения до балансировки"
+              >
+                <span>Отменить корректировку</span>
+              </button>
+            ) : null}
+          </div>
         </div>
+
+        {/* Информационный отчет о примененных изменениях */}
+        {balanceNotice && (
+          <div className="mt-3.5 pt-3 border-t border-stone-200/60 dark:border-stone-800">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                Рецепт сбалансирован под стиль «{recipe.style}»
+              </span>
+              <button
+                type="button"
+                onClick={() => setBalanceNotice(null)}
+                className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-0.5 rounded cursor-pointer"
+                title="Закрыть уведомление"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <ul className="space-y-1 text-xs text-stone-700 dark:text-stone-300 list-disc list-inside bg-white/70 dark:bg-stone-900/60 p-3 rounded-xl border border-emerald-200/60 dark:border-emerald-900/40">
+              {balanceNotice.map((change, idx) => (
+                <li key={idx}>{change}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       {/* Секция 1: Засыпь солода (Grain Bill) */}
@@ -682,6 +756,16 @@ export const RecipeBuilder: React.FC<Props> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleAutoBalanceRecipe('grains')}
+              className="px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Авто-баланс веса зерна под плотность (OG) и цветность выбранного стиля BJCP"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              <span>Авто-баланс</span>
+            </button>
+
             <button
               type="button"
               onClick={handleApplyAllKurskSubstitutes}
@@ -1125,6 +1209,16 @@ export const RecipeBuilder: React.FC<Props> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleAutoBalanceRecipe('hops')}
+              className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-900 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="Авто-баланс навески хмеля под горечь (IBU) и баланс BU:GU выбранного стиля BJCP"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Авто-баланс</span>
+            </button>
+
             <select
               onChange={(e) => {
                 if (e.target.value === '__CUSTOM__') {
