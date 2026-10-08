@@ -22,6 +22,7 @@ import {
   Plus
 } from 'lucide-react';
 import { SafeNumberInput } from './SafeNumberInput';
+import { useBrewingHistory } from '../context/BrewingHistoryContext';
 
 export type ActiveTab =
   | 'calculator'
@@ -63,6 +64,7 @@ export const Navbar: React.FC<Props> = ({
   onOpenHistory
 }) => {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const { moments } = useBrewingHistory();
 
   const navItems = [
     { id: 'calculator', label: 'Калькулятор', icon: Calculator },
@@ -196,11 +198,11 @@ export const Navbar: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={onOpenHistory}
-                title="Хроника и первоисточники пивоварения (исторические ссылки и моменты)"
+                title="Хроника и первоисточники пивоварения (исторические ссылки и моменты, автообновление раз в 3 дня)"
                 className="p-2 rounded-xl text-stone-700 hover:text-amber-700 hover:bg-amber-50/70 dark:text-stone-300 dark:hover:text-amber-400 dark:hover:bg-stone-800 transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
               >
                 <span className="text-sm">📜</span>
-                <span className="hidden xl:inline">Хроника</span>
+                <span className="hidden xl:inline">Хроника ({moments.length})</span>
               </button>
 
               {/* Переключатель световой темы */}
@@ -453,7 +455,7 @@ export const Navbar: React.FC<Props> = ({
                   className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-900 text-xs font-semibold flex items-center justify-center gap-1.5 col-span-2 cursor-pointer"
                 >
                   <span className="text-sm">📜</span>
-                  <span>Хроника пивоварения и первоисточники</span>
+                  <span>Хроника пивоварения и первоисточники ({moments.length})</span>
                 </button>
 
                 <button

@@ -9,6 +9,7 @@ import { syncRouter } from './server/routes/sync.js';
 import { communityRouter } from './server/routes/community.js';
 import { recipesRouter } from './server/routes/recipes.js';
 import { createProjectRouter } from './server/routes/project.js';
+import { historyRouter } from './server/routes/history.js';
 
 dotenv.config();
 
@@ -54,6 +55,7 @@ app.use('/api/ai', createAiRouter(() => aiClient));
 app.use('/api/sync', syncRouter);
 app.use('/api/community', communityRouter);
 app.use('/api/recipes', recipesRouter);
+app.use('/api/history', historyRouter);
 app.use('/api/project', createProjectRouter(__dirname));
 
 // ======================== DEV & PROD SERVING ========================

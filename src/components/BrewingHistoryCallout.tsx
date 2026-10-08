@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import {
-  BREWING_HISTORY_MOMENTS,
   BrewingHistoryMoment,
   getHistoryEraBadge
 } from '../data/brewingHistoryData';
+import { useBrewingHistory } from '../context/BrewingHistoryContext';
 import {
   BookOpen,
   Calendar,
@@ -14,7 +14,9 @@ import {
   Shuffle,
   ChevronDown,
   ChevronUp,
-  Sparkles
+  Sparkles,
+  Globe,
+  RefreshCw
 } from 'lucide-react';
 
 interface Props {
@@ -28,36 +30,43 @@ export const BrewingHistoryCallout: React.FC<Props> = ({
   onOpenFullHistory,
   variant = 'card'
 }) => {
+  const { moments, isLoading, timeUntilNextSync } = useBrewingHistory();
+
   // Ищем момент, связанный со стилем текущего рецепта
   const matchingMoment = useMemo(() => {
-    if (!currentStyleName) return null;
+    if (!currentStyleName || moments.length === 0) return null;
     const lower = currentStyleName.toLowerCase();
-    return BREWING_HISTORY_MOMENTS.find(m =>
+    return moments.find(m =>
       m.relevantStyles.some(st => lower.includes(st.toLowerCase()) || st.toLowerCase().includes(lower))
     );
-  }, [currentStyleName]);
+  }, [currentStyleName, moments]);
 
   const [currentIndex, setCurrentIndex] = useState(() => {
     if (matchingMoment) {
-      const idx = BREWING_HISTORY_MOMENTS.findIndex(m => m.id === matchingMoment.id);
+      const idx = moments.findIndex(m => m.id === matchingMoment.id);
       return idx >= 0 ? idx : 0;
     }
     // Случайный начальный факт
-    return Math.floor(Math.random() * BREWING_HISTORY_MOMENTS.length);
+    return moments.length > 0 ? Math.floor(Math.random() * moments.length) : 0;
   });
 
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const currentMoment: BrewingHistoryMoment = BREWING_HISTORY_MOMENTS[currentIndex];
+  // Безопасный индекс
+  const safeIndex = moments.length > 0 ? Math.min(Math.max(0, currentIndex), moments.length - 1) : 0;
+  const currentMoment: BrewingHistoryMoment | undefined = moments[safeIndex];
 
   const handleNextRandom = (e: React.MouseEvent) => {
     e.stopPropagation();
-    let nextIdx = Math.floor(Math.random() * BREWING_HISTORY_MOMENTS.length);
-    if (nextIdx === currentIndex) {
-      nextIdx = (currentIndex + 1) % BREWING_HISTORY_MOMENTS.length;
+    if (moments.length <= 1) return;
+    let nextIdx = Math.floor(Math.random() * moments.length);
+    if (nextIdx === safeIndex) {
+      nextIdx = (safeIndex + 1) % moments.length;
     }
     setCurrentIndex(nextIdx);
   };
+
+  if (!currentMoment) return null;
 
   const eraBadge = getHistoryEraBadge(currentMoment.era);
 
@@ -89,7 +98,7 @@ export const BrewingHistoryCallout: React.FC<Props> = ({
             onClick={() => onOpenFullHistory(currentMoment.id)}
             className="px-2.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] transition-colors cursor-pointer"
           >
-            Хроника
+            Хроника ({moments.length})
           </button>
         </div>
       </div>
@@ -117,6 +126,13 @@ export const BrewingHistoryCallout: React.FC<Props> = ({
             <Calendar className="w-3 h-3" />
             {currentMoment.year}
           </span>
+          <span
+            className="text-[10px] font-semibold text-stone-500 dark:text-stone-400 bg-white/80 dark:bg-stone-800/80 px-2 py-0.5 rounded-full border border-stone-200 dark:border-stone-700 hidden sm:flex items-center gap-1"
+            title={`Периодическая подгрузка из сети раз в 3 дня. След. автопроверка через ${timeUntilNextSync.days} дн. ${timeUntilNextSync.hours} ч.`}
+          >
+            <Globe className="w-2.5 h-2.5 text-sky-500" />
+            <span>Сеть: раз в 3 дня</span>
+          </span>
         </div>
 
         <div className="flex items-center gap-1.5">
@@ -136,7 +152,7 @@ export const BrewingHistoryCallout: React.FC<Props> = ({
             className="px-2.5 py-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-sm"
           >
             <BookOpen className="w-3 h-3" />
-            <span>Вся хроника ({BREWING_HISTORY_MOMENTS.length})</span>
+            <span>Вся хроника ({moments.length})</span>
           </button>
         </div>
       </div>
