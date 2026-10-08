@@ -111,10 +111,10 @@ export const NewRecipeModal: React.FC<Props> = ({
       grains: [
         {
           id: `grain_${Date.now()}_1`,
-          name: 'Светлый базовый солод (Pale / Pilsner)',
+          name: 'Курский Пилснер (Pilsner Malt)',
           weightKg: Number(((finalBatchSizeL * 0.22)).toFixed(1)), // ~6.6 кг на 30 л
-          potentialSg: 1.038,
-          colorEbc: 4.5,
+          potentialSg: 1.037,
+          colorEbc: 3.8,
           type: 'base'
         }
       ],
@@ -204,18 +204,29 @@ export const NewRecipeModal: React.FC<Props> = ({
     const targetPoints = (targetOg - 1.0) * 1000;
     const estGrainWeight = Math.max(4.5, Number(((targetPoints * finalBatchSizeL * 0.264172) / (37 * (finalEfficiency / 100) * 2.20462)).toFixed(1)));
 
-    // Подбираем базовый солод в соответствии со стилем
-    let baseMaltName = 'Pale Ale Malt';
-    let baseColor = 5.5;
+    // Подбираем базовый Курский солод в соответствии со стилем
+    let baseMaltName = 'Курский Пэйл Эль (Pale Ale Malt)';
+    let baseColor = 6.0;
+    let basePotential = 1.038;
+    let baseType: 'base' | 'caramel' | 'roasted' | 'wheat' | 'adjunct' | 'acid' = 'base';
+
     if (activeStyle.fermentationType === 'lager' || activeStyle.name.includes('Пилснер')) {
-      baseMaltName = 'Pilsner Malt';
-      baseColor = 3.5;
+      baseMaltName = 'Курский Пилснер (Pilsner Malt)';
+      baseColor = 3.8;
+      basePotential = 1.037;
     } else if (activeStyle.name.includes('Мюнхен') || activeStyle.name.includes('Дункель')) {
-      baseMaltName = 'Munich Malt I';
-      baseColor = 15.0;
+      baseMaltName = 'Курский Мюнхенский темный (Munich Typ 2, 25 EBC)';
+      baseColor = 25.0;
+      basePotential = 1.035;
     } else if (activeStyle.name.includes('Венский')) {
-      baseMaltName = 'Vienna Malt';
-      baseColor = 8.0;
+      baseMaltName = 'Курский Венский (Vienna Malt)';
+      baseColor = 8.5;
+      basePotential = 1.036;
+    } else if (activeStyle.category.includes('Пшенич') || activeStyle.name.includes('Вайцен')) {
+      baseMaltName = 'Курский Пшеничный светлый (Wheat Malt)';
+      baseColor = 4.5;
+      basePotential = 1.038;
+      baseType = 'wheat';
     }
 
     const newRecipe: Recipe = {
@@ -237,9 +248,9 @@ export const NewRecipeModal: React.FC<Props> = ({
           id: `grain_${Date.now()}_1`,
           name: baseMaltName,
           weightKg: estGrainWeight,
-          potentialSg: 1.038,
+          potentialSg: basePotential,
           colorEbc: baseColor,
-          type: 'base'
+          type: baseType
         }
       ],
       hops: [

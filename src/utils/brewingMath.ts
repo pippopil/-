@@ -963,25 +963,25 @@ export function balanceRecipeForStyle(
   let adjustedGrains: GrainItem[] = recipe.grains.map(g => ({ ...g }));
 
   if (doGrains) {
-    // Если засыпь пустая — создаем базовый солод
-  if (adjustedGrains.length === 0) {
-    const isWheat = targetStyle.id.includes('weiss') || targetStyle.id.includes('wit');
-    const isLager = targetStyle.fermentationType === 'lager';
-    if (isWheat) {
-      adjustedGrains = [
-        { id: `grain_${Date.now()}_1`, name: 'Пшеничный светлый (Wheat Malt)', weightKg: 2.5, potentialSg: 1.038, colorEbc: 4.0, type: 'wheat' },
-        { id: `grain_${Date.now()}_2`, name: 'Pilsner Malt (Пилснер)', weightKg: 2.5, potentialSg: 1.037, colorEbc: 3.5, type: 'base' }
-      ];
-    } else if (isLager) {
-      adjustedGrains = [
-        { id: `grain_${Date.now()}_1`, name: 'Pilsner Malt (Пилснер)', weightKg: 5.0, potentialSg: 1.037, colorEbc: 3.5, type: 'base' }
-      ];
-    } else {
-      adjustedGrains = [
-        { id: `grain_${Date.now()}_1`, name: 'Pale Ale Malt (Пэйл Эль)', weightKg: 5.0, potentialSg: 1.038, colorEbc: 6.0, type: 'base' }
-      ];
+    // Если засыпь пустая — создаем базовый солод из линейки «Курский солод»
+    if (adjustedGrains.length === 0) {
+      const isWheat = targetStyle.id.includes('weiss') || targetStyle.id.includes('wit');
+      const isLager = targetStyle.fermentationType === 'lager';
+      if (isWheat) {
+        adjustedGrains = [
+          { id: `grain_${Date.now()}_1`, name: 'Курский Пшеничный светлый (Wheat Malt)', weightKg: 3.5, potentialSg: 1.038, colorEbc: 4.5, type: 'wheat' },
+          { id: `grain_${Date.now()}_2`, name: 'Курский Пилснер (Pilsner Malt)', weightKg: 3.5, potentialSg: 1.037, colorEbc: 3.8, type: 'base' }
+        ];
+      } else if (isLager) {
+        adjustedGrains = [
+          { id: `grain_${Date.now()}_1`, name: 'Курский Пилснер (Pilsner Malt)', weightKg: 7.0, potentialSg: 1.037, colorEbc: 3.8, type: 'base' }
+        ];
+      } else {
+        adjustedGrains = [
+          { id: `grain_${Date.now()}_1`, name: 'Курский Пэйл Эль (Pale Ale Malt)', weightKg: 7.0, potentialSg: 1.038, colorEbc: 6.0, type: 'base' }
+        ];
+      }
     }
-  }
 
   // 3a. Сначала масштабируем засыпь для достижения целевой плотности (OG)
   let currentPoints = adjustedGrains.reduce((sum, g) => {
@@ -1035,23 +1035,23 @@ export function balanceRecipeForStyle(
         mainBaseGrain.weightKg = Number((mainBaseGrain.weightKg - addedKg).toFixed(2));
       }
     } else {
-      let specName = 'Munich II (Мюнхенский темный 25 EBC)';
+      let specName = 'Курский Мюнхенский темный (Munich Typ 2, 25 EBC)';
       let specColor = 25.0;
       let specType: 'base' | 'caramel' | 'roasted' = 'base';
       let specPotential = 1.035;
 
       if (targetMidEbc >= 45) {
-        specName = 'Chocolate Malt (Шоколадный 900 EBC)';
+        specName = 'Курский Шоколадный (Chocolate 900 EBC)';
         specColor = 900.0;
         specType = 'roasted';
         specPotential = 1.028;
       } else if (targetMidEbc >= 18) {
-        specName = 'Caramunich III (Карамюнхен 150 EBC)';
+        specName = 'Курский Карамельный 150 (Caramel 150 EBC)';
         specColor = 150.0;
         specType = 'caramel';
         specPotential = 1.033;
       } else {
-        specName = 'Carared (Караред 50 EBC)';
+        specName = 'Курский Карамельный 50 (Caramel 50 EBC)';
         specColor = 50.0;
         specType = 'caramel';
         specPotential = 1.034;

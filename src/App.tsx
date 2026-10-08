@@ -398,16 +398,17 @@ export default function App() {
       targetCarbonationVol: 2.4,
       beerTempAtBottlingC: 19,
       grains: [
-        { id: `g_${Date.now()}_1`, name: 'Pale Ale Malt', weightKg: 6.5, potentialSg: 1.038, colorEbc: 6.0, type: 'base' },
-        { id: `g_${Date.now()}_2`, name: 'Carapils', weightKg: 0.5, potentialSg: 1.033, colorEbc: 4.5, type: 'caramel' }
+        { id: `g_${Date.now()}_1`, name: 'Курский Пэйл Эль (Pale Ale Malt)', weightKg: 6.2, potentialSg: 1.038, colorEbc: 6.0, type: 'base' },
+        { id: `g_${Date.now()}_2`, name: 'Курский Десертный (Карамельный 20 EBC)', weightKg: 0.5, potentialSg: 1.033, colorEbc: 20.0, type: 'caramel' }
       ],
       hops: [
         { id: `h_${Date.now()}_1`, name: 'Magnum', weightG: 25, alphaAcid: 14.0, boilTimeMin: 60, use: 'boil' },
         { id: `h_${Date.now()}_2`, name: 'Cascade', weightG: 45, alphaAcid: 6.0, boilTimeMin: 15, use: 'boil' }
       ],
       mashSchedule: [
-        { id: 'm1', name: 'Осахаривание (Мальтозная)', tempC: 66, timeMin: 60, type: 'maltose' },
-        { id: 'm2', name: 'Мэшаут', tempC: 78, timeMin: 10, type: 'mashout' }
+        { id: 'm1', name: 'Белковая пауза (Курский солод)', tempC: 53, timeMin: 15, type: 'protein' },
+        { id: 'm2', name: 'Мальтозная пауза', tempC: 65, timeMin: 50, type: 'maltose' },
+        { id: 'm3', name: 'Мэшаут', tempC: 78, timeMin: 10, type: 'mashout' }
       ],
       yeast: {
         name: 'SafAle US-05',

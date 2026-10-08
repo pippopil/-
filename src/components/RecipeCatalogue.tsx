@@ -57,7 +57,7 @@ export const RecipeCatalogue: React.FC<Props> = ({
 }) => {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
-  const [collectionFilter, setCollectionFilter] = useState<'all' | 'favorites' | 'planned' | 'my_recipes'>('all');
+  const [collectionFilter, setCollectionFilter] = useState<'all' | 'kursk_only' | 'favorites' | 'planned' | 'my_recipes'>('all');
   const [onlineHubOpen, setOnlineHubOpen] = useState(false);
 
   const categories = useMemo(() => {
@@ -67,14 +67,15 @@ export const RecipeCatalogue: React.FC<Props> = ({
   // Адаптация любого рецепта под Курский солод
   const handleAdaptToKursk = (rec: Recipe) => {
     const adaptedGrains = rec.grains.map(g => {
-      const sub = getKurskMaltSubstitute(g.name);
+      const sub = getKurskMaltSubstitute(g.name, g.type, g.colorEbc);
       if (!sub) return g;
       return {
         ...g,
         name: sub.kurskName,
         potentialSg: sub.potentialSg,
         colorEbc: sub.colorEbc,
-        weightKg: Number((g.weightKg * sub.ratio).toFixed(2))
+        weightKg: Number((g.weightKg * sub.ratio).toFixed(2)),
+        type: sub.type || g.type
       };
     });
     const calculated = calculateBrewMetrics({
@@ -113,6 +114,10 @@ export const RecipeCatalogue: React.FC<Props> = ({
 
       if (activeCategory !== 'all' && r.category !== activeCategory) return false;
 
+      if (collectionFilter === 'kursk_only') {
+        const isAllKursk = r.grains.every(g => isKurskMalt(g.name));
+        if (!isAllKursk) return false;
+      }
       if (collectionFilter === 'favorites' && r.collection !== 'favorites') return false;
       if (collectionFilter === 'planned' && r.collection !== 'planned') return false;
       if (collectionFilter === 'my_recipes' && !r.isCustom) return false;
@@ -172,6 +177,7 @@ export const RecipeCatalogue: React.FC<Props> = ({
         <div className="flex flex-wrap items-center gap-2">
           {[
             { id: 'all', label: 'Все рецепты' },
+            { id: 'kursk_only', label: '🌾 На Курском солоде' },
             { id: 'favorites', label: 'Избранное ⭐' },
             { id: 'planned', label: 'Планирую сварить 📌' },
             { id: 'my_recipes', label: 'Мои авторские 🛠️' }

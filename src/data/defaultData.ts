@@ -1,73 +1,74 @@
 import { CommunityPost, InventoryItem, Lifehack, Recipe } from '../types/brewing';
 import { calculateBrewMetrics, scaleRecipeIngredients } from '../utils/brewingMath';
 
-// Полный каталог всех существующих пивоваренных солодов
+// Полный каталог всех существующих пивоваренных солодов (Курский солод в приоритете)
 export const COMMON_GRAINS = [
-  // Базовые солода
-  { name: 'Pilsner Malt (Пилснер)', potentialSg: 1.037, colorEbc: 3.5, type: 'base' as const, group: 'Базовые' },
-  { name: 'Pale Ale Malt (Пэйл Эль)', potentialSg: 1.038, colorEbc: 6.0, type: 'base' as const, group: 'Базовые' },
-  { name: 'Maris Otter (Английский Пэйл)', potentialSg: 1.038, colorEbc: 6.5, type: 'base' as const, group: 'Базовые' },
-  { name: 'Vienna Malt (Венский)', potentialSg: 1.036, colorEbc: 8.0, type: 'base' as const, group: 'Базовые' },
-  { name: 'Munich I (Мюнхенский светлый 15 EBC)', potentialSg: 1.036, colorEbc: 15.0, type: 'base' as const, group: 'Базовые' },
-  { name: 'Munich II (Мюнхенский темный 25 EBC)', potentialSg: 1.035, colorEbc: 25.0, type: 'base' as const, group: 'Базовые' },
-  { name: 'Wheat Malt (Пшеничный светлый)', potentialSg: 1.038, colorEbc: 4.0, type: 'wheat' as const, group: 'Пшеничные' },
-  { name: 'Dark Wheat Malt (Пшеничный темный)', potentialSg: 1.037, colorEbc: 17.0, type: 'wheat' as const, group: 'Пшеничные' },
-  { name: 'Rye Malt (Ржаной солод)', potentialSg: 1.036, colorEbc: 8.0, type: 'adjunct' as const, group: 'Специальные' },
+  // 1. Полная линейка Курского солодовенного завода (Россия, приоритетный выбор)
+  { name: 'Курский Пилснер (Pilsner Malt)', potentialSg: 1.037, colorEbc: 3.8, type: 'base' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Премиум Пилснер (Premium Pilsner)', potentialSg: 1.038, colorEbc: 3.4, type: 'base' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Пэйл Эль (Pale Ale Malt)', potentialSg: 1.038, colorEbc: 6.0, type: 'base' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Венский (Vienna Malt)', potentialSg: 1.036, colorEbc: 8.5, type: 'base' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Мюнхенский светлый (Munich Typ 1, 15 EBC)', potentialSg: 1.036, colorEbc: 15.0, type: 'base' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Мюнхенский темный (Munich Typ 2, 25 EBC)', potentialSg: 1.035, colorEbc: 25.0, type: 'base' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Пшеничный светлый (Wheat Malt)', potentialSg: 1.038, colorEbc: 4.5, type: 'wheat' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Пшеничный темный (Dark Wheat Malt)', potentialSg: 1.037, colorEbc: 18.0, type: 'wheat' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Ржаной неферментированный (светлый)', potentialSg: 1.036, colorEbc: 8.0, type: 'adjunct' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Ржаной ферментированный (темный)', potentialSg: 1.030, colorEbc: 150.0, type: 'roasted' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Гречишный (Buckwheat Malt)', potentialSg: 1.034, colorEbc: 8.0, type: 'adjunct' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Овсяный (Oat Malt)', potentialSg: 1.034, colorEbc: 4.0, type: 'adjunct' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Десертный (Карамельный 20 EBC)', potentialSg: 1.033, colorEbc: 20.0, type: 'caramel' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Карамельный 50 (Caramel 50 EBC)', potentialSg: 1.034, colorEbc: 50.0, type: 'caramel' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Карамельный 100 (Caramel 100 EBC)', potentialSg: 1.034, colorEbc: 100.0, type: 'caramel' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Карамельный 150 (Caramel 150 EBC)', potentialSg: 1.033, colorEbc: 150.0, type: 'caramel' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Карамельный 200 (Caramel 200 EBC)', potentialSg: 1.033, colorEbc: 200.0, type: 'caramel' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Карамельный 250 (Caramel 250 EBC)', potentialSg: 1.032, colorEbc: 250.0, type: 'caramel' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Карамельный 300 (Caramel 300 EBC)', potentialSg: 1.032, colorEbc: 300.0, type: 'caramel' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Меланоидиновый (Melanoidin 75 EBC)', potentialSg: 1.035, colorEbc: 75.0, type: 'caramel' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Солод двойной обжарки (250-350 EBC)', potentialSg: 1.032, colorEbc: 300.0, type: 'caramel' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Кислый (Acidulated Malt)', potentialSg: 1.027, colorEbc: 4.5, type: 'acid' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Копченый (Smoked Malt)', potentialSg: 1.036, colorEbc: 6.0, type: 'base' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Шоколадный (Chocolate 900 EBC)', potentialSg: 1.028, colorEbc: 900.0, type: 'roasted' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Жженый (Roasted Malt 1400 EBC)', potentialSg: 1.024, colorEbc: 1400.0, type: 'roasted' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Жженый ячмень (Roasted Barley 1100 EBC)', potentialSg: 1.025, colorEbc: 1100.0, type: 'roasted' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Черный солод (Black Malt 1200 EBC)', potentialSg: 1.025, colorEbc: 1200.0, type: 'roasted' as const, group: '🌾 Курский солод' },
+  { name: 'Курский Диафарин (Энзимный ферментативный солод)', potentialSg: 1.037, colorEbc: 3.5, type: 'base' as const, group: '🌾 Курский солод' },
 
-  // Карамельные и специальные солода
-  { name: 'Carapils / Carafoam (Карапилс для пены)', potentialSg: 1.033, colorEbc: 4.5, type: 'caramel' as const, group: 'Карамельные' },
-  { name: 'Carahell (Карахелль 25 EBC)', potentialSg: 1.034, colorEbc: 25.0, type: 'caramel' as const, group: 'Карамельные' },
-  { name: 'Carared (Караред 50 EBC для красного цвета)', potentialSg: 1.034, colorEbc: 50.0, type: 'caramel' as const, group: 'Карамельные' },
-  { name: 'Caramunich I (Карамюнхен 90 EBC)', potentialSg: 1.034, colorEbc: 90.0, type: 'caramel' as const, group: 'Карамельные' },
-  { name: 'Caramunich II (Карамюнхен 120 EBC)', potentialSg: 1.034, colorEbc: 120.0, type: 'caramel' as const, group: 'Карамельные' },
-  { name: 'Caramunich III (Карамюнхен 150 EBC)', potentialSg: 1.033, colorEbc: 150.0, type: 'caramel' as const, group: 'Карамельные' },
-  { name: 'Caraaroma (Караарома 350 EBC)', potentialSg: 1.033, colorEbc: 350.0, type: 'caramel' as const, group: 'Карамельные' },
-  { name: 'Special B (Спешиал Б 300 EBC - изюм, чернослив)', potentialSg: 1.032, colorEbc: 300.0, type: 'caramel' as const, group: 'Карамельные' },
-  { name: 'Chateau Crystal (Шато Кристалл 150 EBC, Castle Malting Бельгия)', potentialSg: 1.033, colorEbc: 150.0, type: 'caramel' as const, group: 'Карамельные' },
-  { name: 'Chateau Biscuit (Шато Бисквит 50 EBC, Castle Malting Бельгия)', potentialSg: 1.034, colorEbc: 50.0, type: 'caramel' as const, group: 'Специальные' },
-  { name: 'Melanoidin Malt (Меланоидиновый)', potentialSg: 1.035, colorEbc: 70.0, type: 'caramel' as const, group: 'Карамельные' },
-  { name: 'Acidulated Malt (Кислый солод для pH)', potentialSg: 1.027, colorEbc: 4.5, type: 'acid' as const, group: 'Специальные' },
+  // 2. Базовые импортные солода
+  { name: 'Pilsner Malt (Пилснер)', potentialSg: 1.037, colorEbc: 3.5, type: 'base' as const, group: 'Импортные базовые' },
+  { name: 'Pale Ale Malt (Пэйл Эль)', potentialSg: 1.038, colorEbc: 6.0, type: 'base' as const, group: 'Импортные базовые' },
+  { name: 'Maris Otter (Английский Пэйл)', potentialSg: 1.038, colorEbc: 6.5, type: 'base' as const, group: 'Импортные базовые' },
+  { name: 'Vienna Malt (Венский)', potentialSg: 1.036, colorEbc: 8.0, type: 'base' as const, group: 'Импортные базовые' },
+  { name: 'Munich I (Мюнхенский светлый 15 EBC)', potentialSg: 1.036, colorEbc: 15.0, type: 'base' as const, group: 'Импортные базовые' },
+  { name: 'Munich II (Мюнхенский темный 25 EBC)', potentialSg: 1.035, colorEbc: 25.0, type: 'base' as const, group: 'Импортные базовые' },
+  { name: 'Wheat Malt (Пшеничный светлый)', potentialSg: 1.038, colorEbc: 4.0, type: 'wheat' as const, group: 'Импортные пшеничные' },
+  { name: 'Dark Wheat Malt (Пшеничный темный)', potentialSg: 1.037, colorEbc: 17.0, type: 'wheat' as const, group: 'Импортные пшеничные' },
+  { name: 'Rye Malt (Ржаной солод)', potentialSg: 1.036, colorEbc: 8.0, type: 'adjunct' as const, group: 'Импортные специальные' },
 
-  // Жженые и темные солода
-  { name: 'Chocolate Malt (Шоколадный 900 EBC)', potentialSg: 1.028, colorEbc: 900.0, type: 'roasted' as const, group: 'Жженые' },
-  { name: 'Roasted Barley (Жженый ячмень 1100 EBC)', potentialSg: 1.025, colorEbc: 1100.0, type: 'roasted' as const, group: 'Жженые' },
-  { name: 'Carafa Special I (Карафа 1 без горечи 900 EBC)', potentialSg: 1.029, colorEbc: 900.0, type: 'roasted' as const, group: 'Жженые' },
-  { name: 'Carafa Special III (Карафа 3 без горечи 1400 EBC)', potentialSg: 1.028, colorEbc: 1400.0, type: 'roasted' as const, group: 'Жженые' },
-  { name: 'Black Malt (Черный солод 1300 EBC)', potentialSg: 1.025, colorEbc: 1300.0, type: 'roasted' as const, group: 'Жженые' },
+  // 3. Карамельные и специальные импортные солода
+  { name: 'Carapils / Carafoam (Карапилс для пены)', potentialSg: 1.033, colorEbc: 4.5, type: 'caramel' as const, group: 'Импортные карамельные' },
+  { name: 'Carahell (Карахелль 25 EBC)', potentialSg: 1.034, colorEbc: 25.0, type: 'caramel' as const, group: 'Импортные карамельные' },
+  { name: 'Carared (Караред 50 EBC для красного цвета)', potentialSg: 1.034, colorEbc: 50.0, type: 'caramel' as const, group: 'Импортные карамельные' },
+  { name: 'Caramunich I (Карамюнхен 90 EBC)', potentialSg: 1.034, colorEbc: 90.0, type: 'caramel' as const, group: 'Импортные карамельные' },
+  { name: 'Caramunich II (Карамюнхен 120 EBC)', potentialSg: 1.034, colorEbc: 120.0, type: 'caramel' as const, group: 'Импортные карамельные' },
+  { name: 'Caramunich III (Карамюнхен 150 EBC)', potentialSg: 1.033, colorEbc: 150.0, type: 'caramel' as const, group: 'Импортные карамельные' },
+  { name: 'Caraaroma (Караарома 350 EBC)', potentialSg: 1.033, colorEbc: 350.0, type: 'caramel' as const, group: 'Импортные карамельные' },
+  { name: 'Special B (Спешиал Б 300 EBC - изюм, чернослив)', potentialSg: 1.032, colorEbc: 300.0, type: 'caramel' as const, group: 'Импортные карамельные' },
+  { name: 'Chateau Crystal (Шато Кристалл 150 EBC, Castle Malting Бельгия)', potentialSg: 1.033, colorEbc: 150.0, type: 'caramel' as const, group: 'Импортные карамельные' },
+  { name: 'Chateau Biscuit (Шато Бисквит 50 EBC, Castle Malting Бельгия)', potentialSg: 1.034, colorEbc: 50.0, type: 'caramel' as const, group: 'Импортные специальные' },
+  { name: 'Melanoidin Malt (Меланоидиновый)', potentialSg: 1.035, colorEbc: 70.0, type: 'caramel' as const, group: 'Импортные карамельные' },
+  { name: 'Acidulated Malt (Кислый солод для pH)', potentialSg: 1.027, colorEbc: 4.5, type: 'acid' as const, group: 'Импортные специальные' },
 
-  // Несоложенка и хлопья
+  // 4. Жженые и темные импортные солода
+  { name: 'Chocolate Malt (Шоколадный 900 EBC)', potentialSg: 1.028, colorEbc: 900.0, type: 'roasted' as const, group: 'Импортные жженые' },
+  { name: 'Roasted Barley (Жженый ячмень 1100 EBC)', potentialSg: 1.025, colorEbc: 1100.0, type: 'roasted' as const, group: 'Импортные жженые' },
+  { name: 'Carafa Special I (Карафа 1 без горечи 900 EBC)', potentialSg: 1.029, colorEbc: 900.0, type: 'roasted' as const, group: 'Импортные жженые' },
+  { name: 'Carafa Special III (Карафа 3 без горечи 1400 EBC)', potentialSg: 1.028, colorEbc: 1400.0, type: 'roasted' as const, group: 'Импортные жженые' },
+  { name: 'Black Malt (Черный солод 1300 EBC)', potentialSg: 1.025, colorEbc: 1300.0, type: 'roasted' as const, group: 'Импортные жженые' },
+
+  // 5. Несоложенка и хлопья
   { name: 'Flaked Oats (Овсяные хлопья для тела/крема)', potentialSg: 1.032, colorEbc: 2.0, type: 'adjunct' as const, group: 'Хлопья' },
   { name: 'Flaked Barley (Ячменные хлопья)', potentialSg: 1.032, colorEbc: 3.5, type: 'adjunct' as const, group: 'Хлопья' },
-  { name: 'Flaked Wheat (Пшеничные хлопья для витбиров)', potentialSg: 1.035, colorEbc: 3.0, type: 'adjunct' as const, group: 'Хлопья' },
-
-  // Полная линейка Курского солодовенного завода (Россия, все виды)
-  { name: 'Курский Пилснер (Pilsner Malt)', potentialSg: 1.037, colorEbc: 3.8, type: 'base' as const, group: 'Курский солод' },
-  { name: 'Курский Премиум Пилснер (Premium Pilsner)', potentialSg: 1.038, colorEbc: 3.4, type: 'base' as const, group: 'Курский солод' },
-  { name: 'Курский Пэйл Эль (Pale Ale Malt)', potentialSg: 1.038, colorEbc: 6.0, type: 'base' as const, group: 'Курский солод' },
-  { name: 'Курский Венский (Vienna Malt)', potentialSg: 1.036, colorEbc: 8.5, type: 'base' as const, group: 'Курский солод' },
-  { name: 'Курский Мюнхенский светлый (Munich Typ 1, 15 EBC)', potentialSg: 1.036, colorEbc: 15.0, type: 'base' as const, group: 'Курский солод' },
-  { name: 'Курский Мюнхенский темный (Munich Typ 2, 25 EBC)', potentialSg: 1.035, colorEbc: 25.0, type: 'base' as const, group: 'Курский солод' },
-  { name: 'Курский Пшеничный светлый (Wheat Malt)', potentialSg: 1.038, colorEbc: 4.5, type: 'wheat' as const, group: 'Курский солод' },
-  { name: 'Курский Пшеничный темный (Dark Wheat Malt)', potentialSg: 1.037, colorEbc: 18.0, type: 'wheat' as const, group: 'Курский солод' },
-  { name: 'Курский Ржаной неферментированный (светлый)', potentialSg: 1.036, colorEbc: 8.0, type: 'adjunct' as const, group: 'Курский солод' },
-  { name: 'Курский Ржаной ферментированный (темный)', potentialSg: 1.030, colorEbc: 150.0, type: 'roasted' as const, group: 'Курский солод' },
-  { name: 'Курский Гречишный (Buckwheat Malt)', potentialSg: 1.034, colorEbc: 8.0, type: 'adjunct' as const, group: 'Курский солод' },
-  { name: 'Курский Овсяный (Oat Malt)', potentialSg: 1.034, colorEbc: 4.0, type: 'adjunct' as const, group: 'Курский солод' },
-  { name: 'Курский Десертный (Карамельный 20 EBC)', potentialSg: 1.033, colorEbc: 20.0, type: 'caramel' as const, group: 'Курский солод' },
-  { name: 'Курский Карамельный 50 (Caramel 50 EBC)', potentialSg: 1.034, colorEbc: 50.0, type: 'caramel' as const, group: 'Курский солод' },
-  { name: 'Курский Карамельный 100 (Caramel 100 EBC)', potentialSg: 1.034, colorEbc: 100.0, type: 'caramel' as const, group: 'Курский солод' },
-  { name: 'Курский Карамельный 150 (Caramel 150 EBC)', potentialSg: 1.033, colorEbc: 150.0, type: 'caramel' as const, group: 'Курский солод' },
-  { name: 'Курский Карамельный 200 (Caramel 200 EBC)', potentialSg: 1.033, colorEbc: 200.0, type: 'caramel' as const, group: 'Курский солод' },
-  { name: 'Курский Карамельный 250 (Caramel 250 EBC)', potentialSg: 1.032, colorEbc: 250.0, type: 'caramel' as const, group: 'Курский солод' },
-  { name: 'Курский Карамельный 300 (Caramel 300 EBC)', potentialSg: 1.032, colorEbc: 300.0, type: 'caramel' as const, group: 'Курский солод' },
-  { name: 'Курский Меланоидиновый (Melanoidin 75 EBC)', potentialSg: 1.035, colorEbc: 75.0, type: 'caramel' as const, group: 'Курский солод' },
-  { name: 'Курский Кислый (Acidulated Malt)', potentialSg: 1.027, colorEbc: 4.5, type: 'acid' as const, group: 'Курский солод' },
-  { name: 'Курский Копченый (Smoked Malt)', potentialSg: 1.036, colorEbc: 6.0, type: 'base' as const, group: 'Курский солод' },
-  { name: 'Курский Шоколадный (Chocolate 900 EBC)', potentialSg: 1.028, colorEbc: 900.0, type: 'roasted' as const, group: 'Курский солод' },
-  { name: 'Курский Жженый (Roasted Malt 1400 EBC)', potentialSg: 1.024, colorEbc: 1400.0, type: 'roasted' as const, group: 'Курский солод' },
-  { name: 'Курский Жженый ячмень (Roasted Barley 1100 EBC)', potentialSg: 1.025, colorEbc: 1100.0, type: 'roasted' as const, group: 'Курский солод' },
-  { name: 'Курский Черный солод (Black Malt 1200 EBC)', potentialSg: 1.025, colorEbc: 1200.0, type: 'roasted' as const, group: 'Курский солод' },
-  { name: 'Курский Диафарин (Энзимный ферментативный солод)', potentialSg: 1.037, colorEbc: 3.5, type: 'base' as const, group: 'Курский солод' }
+  { name: 'Flaked Wheat (Пшеничные хлопья для витбиров)', potentialSg: 1.035, colorEbc: 3.0, type: 'adjunct' as const, group: 'Хлопья' }
 ];
 
 // Полный каталог хмелей
@@ -1500,20 +1501,26 @@ export const INITIAL_RECIPES: Recipe[] = [
   )
 ];
 
-// Начальный инвентарь (Кладовая)
+// Начальный инвентарь (Кладовая) — укомплектован свежим Курским солодом
 export const INITIAL_INVENTORY: InventoryItem[] = [
-  { id: 'inv_1', name: 'Pale Ale Malt', category: 'grain', amount: 12.0, unit: 'kg', potentialSgOrAlpha: 1.038, colorEbc: 6.0, notes: 'Базовый солод для элей' },
-  { id: 'inv_2', name: 'Pilsner Malt', category: 'grain', amount: 10.0, unit: 'kg', potentialSgOrAlpha: 1.037, colorEbc: 3.5, notes: 'Для лагеров и легких сортов' },
-  { id: 'inv_3', name: 'Wheat Malt (Пшеничный светлый)', category: 'grain', amount: 4.0, unit: 'kg', potentialSgOrAlpha: 1.038, colorEbc: 4.0, notes: 'Для пшеничного пива' },
-  { id: 'inv_4', name: 'Carapils', category: 'grain', amount: 1.5, unit: 'kg', potentialSgOrAlpha: 1.033, colorEbc: 4.5, notes: 'Для стойкой пены' },
-  { id: 'inv_5', name: 'Flaked Oats (Овсяные хлопья)', category: 'grain', amount: 2.0, unit: 'kg', potentialSgOrAlpha: 1.032, colorEbc: 2.0, notes: 'Для стаутов и NEIPA' },
-  { id: 'inv_6', name: 'Citra', category: 'hop', amount: 150, unit: 'g', potentialSgOrAlpha: 12.5, notes: 'Американский хмель' },
-  { id: 'inv_7', name: 'Mosaic', category: 'hop', amount: 100, unit: 'g', potentialSgOrAlpha: 12.0, notes: 'Хмель для сухого охмеления' },
-  { id: 'inv_8', name: 'Saaz (Жатецкий)', category: 'hop', amount: 100, unit: 'g', potentialSgOrAlpha: 3.8, notes: 'Благородный чешский хмель' },
-  { id: 'inv_9', name: 'Magnum', category: 'hop', amount: 60, unit: 'g', potentialSgOrAlpha: 14.0, notes: 'Чистая базовая горечь' },
-  { id: 'inv_10', name: 'SafAle US-05', category: 'yeast', amount: 3, unit: 'pack', potentialSgOrAlpha: 81, notes: 'Сухие элевые дрожжи' },
-  { id: 'inv_11', name: 'SafAle WB-06', category: 'yeast', amount: 2, unit: 'pack', potentialSgOrAlpha: 86, notes: 'Дрожжи для вайцена' },
-  { id: 'inv_12', name: 'Декстроза (глюкоза)', category: 'misc', amount: 1000, unit: 'g', notes: 'Для карбонизации бутылок' }
+  { id: 'inv_1', name: 'Курский Пилснер (Pilsner Malt)', category: 'grain', amount: 25.0, unit: 'kg', potentialSgOrAlpha: 1.037, colorEbc: 3.8, notes: 'Базовый мешок 25 кг Курского завода для лагеров и легких сортов' },
+  { id: 'inv_2', name: 'Курский Пэйл Эль (Pale Ale Malt)', category: 'grain', amount: 25.0, unit: 'kg', potentialSgOrAlpha: 1.038, colorEbc: 6.0, notes: 'Базовый мешок 25 кг для элей, IPA, портеров и крафта' },
+  { id: 'inv_3', name: 'Курский Венский (Vienna Malt)', category: 'grain', amount: 5.0, unit: 'kg', potentialSgOrAlpha: 1.036, colorEbc: 8.5, notes: 'Для венского лагера, марцена и янтарных сортов' },
+  { id: 'inv_4', name: 'Курский Мюнхенский темный (Munich Typ 2, 25 EBC)', category: 'grain', amount: 5.0, unit: 'kg', potentialSgOrAlpha: 1.035, colorEbc: 25.0, notes: 'Для хлебного бисквитного вкуса и темных сортов' },
+  { id: 'inv_5', name: 'Курский Пшеничный светлый (Wheat Malt)', category: 'grain', amount: 5.0, unit: 'kg', potentialSgOrAlpha: 1.038, colorEbc: 4.5, notes: 'Для пшеничного пива и стойкой белой пенной шапки' },
+  { id: 'inv_6', name: 'Курский Десертный (Карамельный 20 EBC)', category: 'grain', amount: 2.0, unit: 'kg', potentialSgOrAlpha: 1.033, colorEbc: 20.0, notes: 'Аналог Carapils/Carafoam для удержания стойкой пены' },
+  { id: 'inv_7', name: 'Курский Карамельный 50 (Caramel 50 EBC)', category: 'grain', amount: 2.0, unit: 'kg', potentialSgOrAlpha: 1.034, colorEbc: 50.0, notes: 'Золотисто-медный блеск и мягкая карамельная сладость' },
+  { id: 'inv_8', name: 'Курский Карамельный 150 (Caramel 150 EBC)', category: 'grain', amount: 2.0, unit: 'kg', potentialSgOrAlpha: 1.033, colorEbc: 150.0, notes: 'Кристаллический карамельный солод для насыщенных элей и биттеров' },
+  { id: 'inv_9', name: 'Курский Меланоидиновый (Melanoidin 75 EBC)', category: 'grain', amount: 1.5, unit: 'kg', potentialSgOrAlpha: 1.035, colorEbc: 75.0, notes: 'Имитация традиционного отварочного затирания' },
+  { id: 'inv_10', name: 'Курский Шоколадный (Chocolate 900 EBC)', category: 'grain', amount: 1.0, unit: 'kg', potentialSgOrAlpha: 1.028, colorEbc: 900.0, notes: 'Глубокие тона какао, горького шоколада и кофе' },
+  { id: 'inv_11', name: 'Курский Жженый ячмень (Roasted Barley 1100 EBC)', category: 'grain', amount: 1.0, unit: 'kg', potentialSgOrAlpha: 1.025, colorEbc: 1100.0, notes: 'Для сухого ирландского стаута и глубокого черного цвета' },
+  { id: 'inv_12', name: 'Citra', category: 'hop', amount: 150, unit: 'g', potentialSgOrAlpha: 12.5, notes: 'Американский хмель' },
+  { id: 'inv_13', name: 'Mosaic', category: 'hop', amount: 100, unit: 'g', potentialSgOrAlpha: 12.0, notes: 'Хмель для сухого охмеления' },
+  { id: 'inv_14', name: 'Saaz (Жатецкий)', category: 'hop', amount: 100, unit: 'g', potentialSgOrAlpha: 3.8, notes: 'Благородный чешский хмель' },
+  { id: 'inv_15', name: 'Magnum', category: 'hop', amount: 100, unit: 'g', potentialSgOrAlpha: 14.0, notes: 'Чистая базовая горечь' },
+  { id: 'inv_16', name: 'SafAle US-05', category: 'yeast', amount: 3, unit: 'pack', potentialSgOrAlpha: 81, notes: 'Сухие элевые дрожжи' },
+  { id: 'inv_17', name: 'Saflager W-34/70', category: 'yeast', amount: 2, unit: 'pack', potentialSgOrAlpha: 83, notes: 'Лагерные дрожжи' },
+  { id: 'inv_18', name: 'Декстроза (глюкоза)', category: 'misc', amount: 1000, unit: 'g', notes: 'Для карбонизации бутылок' }
 ];
 
 export const INITIAL_LIFEHACKS: Lifehack[] = [
