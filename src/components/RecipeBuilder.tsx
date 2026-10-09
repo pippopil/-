@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   CalculatedBrewParams,
   GrainItem,
@@ -13,7 +13,8 @@ import {
   ebcToHex,
   scaleRecipeIngredients,
   validateRecipeAgainstStyle,
-  balanceRecipeForStyle
+  balanceRecipeForStyle,
+  isNonBjcpStyle
 } from '../utils/brewingMath';
 import { COMMON_GRAINS, COMMON_HOPS, COMMON_YEASTS } from '../data/defaultData';
 import {
@@ -45,10 +46,13 @@ import {
   BookOpen,
   X,
   Check,
-  Search
+  Search,
+  Wheat
 } from 'lucide-react';
 import { SafeNumberInput } from './SafeNumberInput';
 import { BrewingHistoryCallout } from './BrewingHistoryCallout';
+import { MarqueeText } from './MarqueeText';
+import { IngredientSearchSelect } from './IngredientSearchSelect';
 
 interface Props {
   recipe: Recipe;
@@ -143,18 +147,28 @@ export const RecipeBuilder: React.FC<Props> = ({
     }
   }, [recipe.id]);
 
+  const isBjcpStyle = useMemo(() => {
+    return !isNonBjcpStyle(recipe.style) && BJCP_STYLES.some(s => s.name === recipe.style || s.nameEn === recipe.style);
+  }, [recipe.style]);
+
   const validation = validateRecipeAgainstStyle(recipe.calculated, recipe.style);
 
   // Добавление солода (импортного или Курского)
-  const addGrain = (template?: typeof COMMON_GRAINS[0] | typeof KURSK_MALT_PRODUCTS[0]) => {
+  const addGrain = (template?: {
+    name: string;
+    potentialSg?: number;
+    colorEbc?: number;
+    type?: GrainItem['type'];
+    group?: string;
+  }) => {
     const newGrain: GrainItem = template
       ? {
           id: `grain_${Date.now()}`,
           name: template.name,
           weightKg: 1.0,
-          potentialSg: template.potentialSg,
-          colorEbc: template.colorEbc,
-          type: template.type
+          potentialSg: template.potentialSg ?? 1.037,
+          colorEbc: template.colorEbc ?? 4.0,
+          type: template.type ?? 'base'
         }
       : {
           id: `grain_${Date.now()}`,
@@ -168,7 +182,6 @@ export const RecipeBuilder: React.FC<Props> = ({
   };
 
   const removeGrain = (id: string) => {
-    if (recipe.grains.length <= 1) return;
     updateParams({ grains: recipe.grains.filter(g => g.id !== id) });
   };
 
@@ -179,13 +192,18 @@ export const RecipeBuilder: React.FC<Props> = ({
   };
 
   // Добавление хмеля
-  const addHop = (template?: typeof COMMON_HOPS[0]) => {
+  const addHop = (template?: {
+    name: string;
+    alphaAcid?: number;
+    profile?: string;
+    region?: string;
+  }) => {
     const newHop: HopItem = template
       ? {
           id: `hop_${Date.now()}`,
           name: template.name,
           weightG: 25,
-          alphaAcid: template.alphaAcid,
+          alphaAcid: template.alphaAcid ?? 5.0,
           boilTimeMin: 15,
           use: 'boil'
         }
@@ -201,7 +219,6 @@ export const RecipeBuilder: React.FC<Props> = ({
   };
 
   const removeHop = (id: string) => {
-    if (recipe.hops.length <= 1) return;
     updateParams({ hops: recipe.hops.filter(h => h.id !== id) });
   };
 
@@ -377,25 +394,76 @@ export const RecipeBuilder: React.FC<Props> = ({
                 placeholder="Название рецепта..."
               />
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="text-stone-500 dark:text-stone-400 font-medium">Стиль BJCP:</span>
-              <select
-                value={recipe.style}
-                onChange={(e) => {
-                  const s = BJCP_STYLES.find(st => st.name === e.target.value || st.nameEn === e.target.value);
-                  updateParams({
-                    style: e.target.value,
-                    category: s ? s.category : recipe.category
-                  });
-                }}
-                className="bg-amber-50 dark:bg-stone-800 text-amber-900 dark:text-amber-300 font-bold px-2.5 py-1 rounded-lg border border-amber-200 dark:border-stone-700 focus:outline-none focus:ring-1 focus:ring-amber-500 text-xs"
-              >
-                {BJCP_STYLES.map(s => (
-                  <option key={s.id} value={s.name}>
-                    {s.name} ({s.category})
-                  </option>
-                ))}
-              </select>
+            {/* Графа стиля пива с уменьшенным адаптивным шрифтом и бегущей строкой */}
+            <div className="space-y-1.5 pt-1">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2">
+                <span className="text-stone-500 dark:text-stone-400 font-semibold text-[11px] sm:text-xs shrink-0 flex items-center gap-1">
+                  <span>🍺 Стиль пива:</span>
+                </span>
+                <div className="flex items-center gap-1.5 flex-1 min-w-0 max-w-full">
+                  <select
+                    value={recipe.style}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === 'Без стиля (Свободный рецепт)' || isNonBjcpStyle(val)) {
+                        updateParams({
+                          style: 'Без стиля (Свободный рецепт)',
+                          category: 'Авторские рецепты'
+                        });
+                      } else {
+                        const s = BJCP_STYLES.find(st => st.name === val || st.nameEn === val);
+                        updateParams({
+                          style: val,
+                          category: s ? s.category : 'Авторские рецепты'
+                        });
+                      }
+                    }}
+                    className="w-full sm:w-auto max-w-full bg-amber-50 dark:bg-stone-800 text-amber-900 dark:text-amber-300 font-bold px-2 py-1.5 rounded-lg border border-amber-200 dark:border-stone-700 focus:outline-none focus:ring-1 focus:ring-amber-500 text-[10px] sm:text-xs truncate cursor-pointer"
+                  >
+                    <option value="Без стиля (Свободный рецепт)">
+                      🎨 Без стиля (Свободный авторский рецепт — без рамок BJCP)
+                    </option>
+                    {!BJCP_STYLES.some(s => s.name === recipe.style) && recipe.style !== 'Без стиля (Свободный рецепт)' && (
+                      <option value={recipe.style}>
+                        🎨 {recipe.style} (Свободный рецепт)
+                      </option>
+                    )}
+                    <optgroup label="Классические стили BJCP">
+                      {BJCP_STYLES.map(s => (
+                        <option key={s.id} value={s.name}>
+                          {s.name} ({s.category})
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
+
+                  {isBjcpStyle && (
+                    <button
+                      type="button"
+                      onClick={() => updateParams({ style: 'Без стиля (Свободный рецепт)', category: 'Авторские рецепты' })}
+                      className="text-[10px] sm:text-[11px] text-stone-500 hover:text-amber-600 dark:hover:text-amber-400 underline cursor-pointer shrink-0"
+                      title="Отвязать рецепт от рамок BJCP и варить в свободном стиле"
+                    >
+                      Снять стиль BJCP
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Бегущая строка (Marquee Ticker) с полным названием стиля и категорией */}
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 dark:bg-stone-800/80 border border-amber-300/60 dark:border-stone-700/60 max-w-full overflow-hidden">
+                <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold shrink-0 uppercase tracking-wider">
+                  Выбранный стиль:
+                </span>
+                <MarqueeText
+                  text={recipe.style}
+                  subtext={recipe.category && recipe.category !== 'Авторские рецепты' ? recipe.category : undefined}
+                  className="flex-1 min-w-0"
+                  textClassName="text-[10px] sm:text-xs font-bold text-amber-950 dark:text-amber-200"
+                  speedSec={16}
+                  maxLengthThreshold={14}
+                />
+              </div>
             </div>
           </div>
 
@@ -680,95 +748,132 @@ export const RecipeBuilder: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Валидатор сбалансированности по BJCP */}
-      <div className={`p-4 sm:p-5 rounded-2xl border transition-all ${
-        validation.isCompliant
-          ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/60'
-          : 'bg-amber-50/80 dark:bg-amber-950/25 border-amber-300 dark:border-amber-800/70'
-      }`}>
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-xl bg-white dark:bg-stone-800 shadow-xs mt-0.5 shrink-0">
-              {validation.isCompliant ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              ) : (
-                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-              )}
-            </div>
-            <div>
-              <div className="font-bold text-sm text-stone-900 dark:text-stone-100 flex items-center flex-wrap gap-2">
-                <span>Проверка соответствия стилю «{recipe.style}»</span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                  validation.isCompliant
-                    ? 'bg-emerald-200 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-200'
-                    : 'bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-200'
-                }`}>
-                  {validation.isCompliant ? 'Сбалансировано' : 'Есть замечания'}
-                </span>
+      {/* Валидатор сбалансированности по BJCP или карточка свободного рецепта */}
+      {!isBjcpStyle ? (
+        <div className="p-4 sm:p-5 rounded-2xl border bg-stone-50/80 dark:bg-stone-850/60 border-stone-200/80 dark:border-stone-800 transition-all">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0">
+                <Sparkles className="w-5 h-5" />
               </div>
-              <p className="text-xs text-stone-600 dark:text-stone-300 mt-1">
-                {validation.balanceVerdict}
-              </p>
-              {validation.recommendations.length > 0 && (
-                <ul className="mt-2 space-y-1 text-xs text-stone-700 dark:text-stone-300 list-disc list-inside">
-                  {validation.recommendations.map((rec, i) => (
-                    <li key={i}>{rec}</li>
-                  ))}
-                </ul>
-              )}
+              <div>
+                <div className="font-bold text-sm text-stone-900 dark:text-stone-100 flex items-center flex-wrap gap-2">
+                  <span>Свободный авторский рецепт</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-stone-200 dark:bg-stone-700 text-stone-700 dark:text-stone-200">
+                    Стили BJCP отключены
+                  </span>
+                </div>
+                <p className="text-xs text-stone-600 dark:text-stone-300 mt-1">
+                  Для чистого авторского шаблона рамки BJCP не используются. Вы можете свободно экспериментировать с любыми пропорциями солода, охмелением и температурными паузами без предупреждений калькулятора.
+                </p>
+              </div>
             </div>
-          </div>
 
-          {/* Быстрое действие: Балансировка в 1 клик при замечаниях */}
-          <div className="flex items-center gap-2 self-start lg:self-center shrink-0">
-            {!validation.isCompliant ? (
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
-                onClick={() => handleAutoBalanceRecipe('all')}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 active:scale-[0.98] text-white font-bold text-xs shadow-sm hover:shadow transition-all flex items-center gap-2 cursor-pointer"
-                title="Автоматически скорректировать засыпь, цвет, хмели и плотность в 1 клик"
+                onClick={() => {
+                  const defaultStyle = BJCP_STYLES[0];
+                  updateParams({ style: defaultStyle.name, category: defaultStyle.category });
+                }}
+                className="px-3.5 py-2 rounded-xl bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 hover:border-amber-400 text-stone-700 dark:text-stone-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                title="Привязать рецепт к классическому стилю BJCP"
               >
-                <Sparkles className="w-4 h-4 text-amber-200 animate-pulse" />
-                <span>Скорректировать рецепт (сбалансировать)</span>
+                <span>Привязать к стилю BJCP</span>
               </button>
-            ) : previousRecipeState ? (
-              <button
-                type="button"
-                onClick={handleUndoBalance}
-                className="px-3.5 py-2 rounded-xl border border-stone-300 dark:border-stone-700 hover:bg-white dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
-                title="Вернуть предыдущие значения до балансировки"
-              >
-                <span>Отменить корректировку</span>
-              </button>
-            ) : null}
+            </div>
           </div>
         </div>
-
-        {/* Информационный отчет о примененных изменениях */}
-        {balanceNotice && (
-          <div className="mt-3.5 pt-3 border-t border-stone-200/60 dark:border-stone-800">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                Рецепт сбалансирован под стиль «{recipe.style}»
-              </span>
-              <button
-                type="button"
-                onClick={() => setBalanceNotice(null)}
-                className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-0.5 rounded cursor-pointer"
-                title="Закрыть уведомление"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+      ) : (
+        <div className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+          validation.isCompliant
+            ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/60'
+            : 'bg-amber-50/80 dark:bg-amber-950/25 border-amber-300 dark:border-amber-800/70'
+        }`}>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-xl bg-white dark:bg-stone-800 shadow-xs mt-0.5 shrink-0">
+                {validation.isCompliant ? (
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                ) : (
+                  <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                )}
+              </div>
+              <div>
+                <div className="font-bold text-sm text-stone-900 dark:text-stone-100 flex items-center flex-wrap gap-2">
+                  <span>Проверка соответствия стилю «{recipe.style}»</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                    validation.isCompliant
+                      ? 'bg-emerald-200 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-200'
+                      : 'bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-200'
+                  }`}>
+                    {validation.isCompliant ? 'Сбалансировано' : 'Есть замечания'}
+                  </span>
+                </div>
+                <p className="text-xs text-stone-600 dark:text-stone-300 mt-1">
+                  {validation.balanceVerdict}
+                </p>
+                {validation.recommendations.length > 0 && (
+                  <ul className="mt-2 space-y-1 text-xs text-stone-700 dark:text-stone-300 list-disc list-inside">
+                    {validation.recommendations.map((rec, i) => (
+                      <li key={i}>{rec}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
-            <ul className="space-y-1 text-xs text-stone-700 dark:text-stone-300 list-disc list-inside bg-white/70 dark:bg-stone-900/60 p-3 rounded-xl border border-emerald-200/60 dark:border-emerald-900/40">
-              {balanceNotice.map((change, idx) => (
-                <li key={idx}>{change}</li>
-              ))}
-            </ul>
+
+            {/* Быстрое действие: Балансировка в 1 клик при замечаниях */}
+            <div className="flex items-center gap-2 self-start lg:self-center shrink-0">
+              {!validation.isCompliant ? (
+                <button
+                  type="button"
+                  onClick={() => handleAutoBalanceRecipe('all')}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 active:scale-[0.98] text-white font-bold text-xs shadow-sm hover:shadow transition-all flex items-center gap-2 cursor-pointer"
+                  title="Автоматически скорректировать засыпь, цвет, хмели и плотность в 1 клик"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-200 animate-pulse" />
+                  <span>Скорректировать рецепт (сбалансировать)</span>
+                </button>
+              ) : previousRecipeState ? (
+                <button
+                  type="button"
+                  onClick={handleUndoBalance}
+                  className="px-3.5 py-2 rounded-xl border border-stone-300 dark:border-stone-700 hover:bg-white dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
+                  title="Вернуть предыдущие значения до балансировки"
+                >
+                  <span>Отменить корректировку</span>
+                </button>
+              ) : null}
+            </div>
           </div>
-        )}
-      </div>
+
+          {/* Информационный отчет о примененных изменениях */}
+          {balanceNotice && (
+            <div className="mt-3.5 pt-3 border-t border-stone-200/60 dark:border-stone-800">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  Рецепт сбалансирован под стиль «{recipe.style}»
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setBalanceNotice(null)}
+                  className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 p-0.5 rounded cursor-pointer"
+                  title="Закрыть уведомление"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <ul className="space-y-1 text-xs text-stone-700 dark:text-stone-300 list-disc list-inside bg-white/70 dark:bg-stone-900/60 p-3 rounded-xl border border-emerald-200/60 dark:border-emerald-900/40">
+                {balanceNotice.map((change, idx) => (
+                  <li key={idx}>{change}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Секция 1: Засыпь солода (Grain Bill) */}
       <div className="bg-white dark:bg-stone-900 rounded-2xl p-5 sm:p-6 shadow-sm border border-stone-200/80 dark:border-stone-800 space-y-4">
@@ -803,41 +908,35 @@ export const RecipeBuilder: React.FC<Props> = ({
               <span>🇷🇺 Все на Курский</span>
             </button>
 
-            <select
-              onChange={(e) => {
-                if (e.target.value === '__CUSTOM__') {
-                  addGrain();
-                } else {
-                  const foundKursk = KURSK_MALT_PRODUCTS.find(g => g.name === e.target.value);
-                  if (foundKursk) {
-                    addGrain(foundKursk);
-                  } else {
-                    const foundCommon = COMMON_GRAINS.find(g => g.name === e.target.value);
-                    if (foundCommon) addGrain(foundCommon);
-                  }
-                }
-                e.target.value = '';
+            {recipe.grains.length > 0 && (
+              <button
+                type="button"
+                onClick={() => updateParams({ grains: [] })}
+                className="px-2.5 py-1.5 rounded-lg border border-stone-200 dark:border-stone-700 hover:bg-red-50 dark:hover:bg-red-950/30 text-stone-500 hover:text-red-600 dark:hover:text-red-400 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                title="Полностью очистить засыпь (удалить все солода)"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Очистить засыпь</span>
+              </button>
+            )}
+
+            {/* Поисковая строка добавления солода (мгновенная фильтрация по началу ввода букв) */}
+            <IngredientSearchSelect
+              type="grain"
+              onSelectGrain={(g) => {
+                addGrain({
+                  name: g.name,
+                  potentialSg: g.potentialSg,
+                  colorEbc: g.colorEbc,
+                  type: g.type,
+                  group: g.group
+                });
               }}
-              defaultValue=""
-              className="bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-750 text-stone-900 dark:text-stone-100 text-xs font-bold px-3 py-1.5 rounded-lg border border-stone-300 dark:border-stone-700 focus:outline-none cursor-pointer"
-            >
-              <option value="" disabled>+ Добавить солод в засыпь...</option>
-              <option value="__CUSTOM__">✍️ + Создать свой солод</option>
-              <optgroup label="🌾 Курский солод (все виды)">
-                {KURSK_MALT_PRODUCTS.map(g => (
-                  <option key={`kursk_${g.name}`} value={g.name}>
-                    {g.name} ({g.colorEbc} EBC)
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="🌍 Импортный солод">
-                {COMMON_GRAINS.map(g => (
-                  <option key={`common_${g.name}`} value={g.name}>
-                    {g.name} ({g.colorEbc} EBC)
-                  </option>
-                ))}
-              </optgroup>
-            </select>
+              onCustomAdd={(customName) => {
+                addGrain(customName ? { name: customName, colorEbc: 4.0, potentialSg: 1.037, type: 'base' } : undefined);
+              }}
+              className="w-full sm:w-64 md:w-72"
+            />
 
             <button
               type="button"
@@ -961,11 +1060,11 @@ export const RecipeBuilder: React.FC<Props> = ({
         </div>
 
         {/* Таблица солодов */}
-        <div className="w-full max-w-full overflow-x-auto rounded-xl border border-stone-200/60 dark:border-stone-800/60">
-          <table className="w-full text-left text-xs min-w-[580px]">
+        <div className="w-full max-w-full overflow-x-auto rounded-xl border border-stone-200/60 dark:border-stone-800/60 swipe-scroll-x">
+          <table className="w-full text-left text-xs min-w-[620px]">
             <thead>
               <tr className="border-b border-stone-200 dark:border-stone-800 text-stone-500 dark:text-stone-400">
-                <th className="py-2 px-1">Название и аналог</th>
+                <th className="py-2 px-2 min-w-[220px]">Название и аналог солода</th>
                 <th className="py-2 px-1">Тип</th>
                 <th className="py-2 px-1 w-24">Вес (кг)</th>
                 <th className="py-2 px-1 w-20">Доля (%)</th>
@@ -975,20 +1074,68 @@ export const RecipeBuilder: React.FC<Props> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-stone-800/60">
-              {recipe.grains.map((grain) => {
+              {recipe.grains.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-stone-500 dark:text-stone-400">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Wheat className="w-8 h-8 text-stone-300 dark:text-stone-600" />
+                      <span className="font-bold text-xs text-stone-700 dark:text-stone-300">Засыпь пуста (0 кг)</span>
+                      <span className="text-[11px] text-stone-400 max-w-md">
+                        Все солода удалены. Найдите нужный солод в строке поиска ниже или создайте свой.
+                      </span>
+                      <div className="w-full max-w-xs mt-1">
+                        <IngredientSearchSelect
+                          type="grain"
+                          onSelectGrain={(g) => addGrain(g)}
+                          onCustomAdd={(customName) => {
+                            addGrain(customName ? { name: customName, colorEbc: 4.0, potentialSg: 1.037, type: 'base' } : undefined);
+                          }}
+                          placeholder="🔍 Найти солод (начните ввод)..."
+                          className="w-full"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => addGrain()}
+                        className="mt-1 px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-2xs border border-stone-200 dark:border-stone-700"
+                      >
+                        <Plus className="w-3.5 h-3.5 text-amber-600" />
+                        <span>+ Создать солод вручную</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                recipe.grains.map((grain) => {
                 const sharePercent = ((grain.weightKg / Math.max(0.1, recipe.calculated.totalGrainWeightKg)) * 100).toFixed(1);
                 const sub = getKurskMaltSubstitute(grain.name, grain.type, grain.colorEbc);
                 const isAlreadyKursk = isKurskMalt(grain.name);
 
                 return (
                   <tr key={grain.id} className="hover:bg-amber-50/40 dark:hover:bg-stone-800/40 transition-colors">
-                    <td className="py-2 px-1">
+                    <td className="py-2 px-2 min-w-[220px] max-w-[290px]">
+                      {/* Поле ввода названия с компактным читаемым шрифтом */}
                       <input
                         type="text"
                         value={grain.name}
                         onChange={(e) => updateGrain(grain.id, { name: e.target.value })}
-                        className="w-full font-medium bg-transparent text-stone-900 dark:text-stone-100 focus:outline-none focus:border-b focus:border-amber-500"
+                        placeholder="Название солода..."
+                        className="w-full font-bold text-[11px] sm:text-xs text-stone-900 dark:text-stone-100 bg-transparent border-b border-transparent hover:border-stone-300 focus:border-amber-500 focus:outline-none py-0.5 truncate"
+                        title={grain.name}
                       />
+
+                      {/* Бегущая строка (Marquee Ticker) для длинных названий солода */}
+                      <div className="mt-0.5 max-w-full overflow-hidden">
+                        <MarqueeText
+                          text={grain.name}
+                          subtext={`${grain.colorEbc} EBC`}
+                          prefix={<span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold shrink-0">🌾 Солод:</span>}
+                          className="w-full"
+                          textClassName="text-[10px] sm:text-[11px] font-semibold text-stone-700 dark:text-stone-300"
+                          maxLengthThreshold={14}
+                          speedSec={15}
+                        />
+                      </div>
                       {/* Подсказка Курского аналога при указании солода */}
                       {sub && !isAlreadyKursk && (
                         <div className="mt-1.5 p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 text-xs space-y-1">
@@ -1086,17 +1233,17 @@ export const RecipeBuilder: React.FC<Props> = ({
                     </td>
                     <td className="py-2 px-1 text-right">
                       <button
+                        type="button"
                         onClick={() => removeGrain(grain.id)}
-                        disabled={recipe.grains.length <= 1}
-                        className="p-1 text-stone-400 hover:text-red-600 disabled:opacity-30 transition-colors"
-                        title="Удалить"
+                        className="p-1 text-stone-400 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer"
+                        title="Удалить этот солод"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>
@@ -1243,64 +1390,96 @@ export const RecipeBuilder: React.FC<Props> = ({
               >
                 Пшеничное
               </button>
+
+              {recipe.mashSchedule.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => updateParams({ mashSchedule: [] })}
+                  className="px-2 py-1 rounded border border-stone-200 dark:border-stone-700 hover:bg-red-50 dark:hover:bg-red-950/30 text-stone-500 hover:text-red-600 dark:hover:text-red-400 font-semibold text-[11px] transition-colors cursor-pointer flex items-center gap-1"
+                  title="Очистить все температурные паузы"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  <span>Очистить паузы</span>
+                </button>
+              )}
             </div>
           </div>
 
           <div className="space-y-2.5">
-            {recipe.mashSchedule.map((rest, idx) => (
-              <div
-                key={rest.id || idx}
-                className="flex items-center gap-3 p-3 rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200/80 dark:border-stone-700/60"
-              >
-                <div className="w-6 h-6 rounded-full bg-amber-500 text-white font-bold text-xs flex items-center justify-center shrink-0">
-                  {idx + 1}
-                </div>
-                <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2.5 min-w-0">
-                  <input
-                    type="text"
-                    value={rest.name}
-                    onChange={(e) => updateMashRest(rest.id, { name: e.target.value })}
-                    className="font-medium text-xs bg-transparent text-stone-900 dark:text-stone-100 focus:outline-none flex-1 min-w-0 py-0.5 border-b border-transparent focus:border-amber-400"
-                    placeholder="Название паузы..."
-                  />
-                  <div className="flex items-center gap-3 shrink-0 text-xs">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-stone-400 text-[11px]">Темп:</span>
-                      <input
-                        type="number"
-                        min="35"
-                        max="85"
-                        step="1"
-                        value={rest.tempC}
-                        onChange={(e) => updateMashRest(rest.id, { tempC: parseFloat(e.target.value) || 65 })}
-                        className="w-14 bg-white dark:bg-stone-700 border border-stone-300 dark:border-stone-600 rounded px-1.5 py-0.5 font-mono font-bold text-center text-xs"
-                      />
-                      <span className="text-stone-500 font-mono text-[11px]">°C</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-stone-400 text-[11px]">Время:</span>
-                      <input
-                        type="number"
-                        min="1"
-                        max="120"
-                        step="5"
-                        value={rest.timeMin}
-                        onChange={(e) => updateMashRest(rest.id, { timeMin: parseInt(e.target.value, 10) || 15 })}
-                        className="w-14 bg-white dark:bg-stone-700 border border-stone-300 dark:border-stone-600 rounded px-1.5 py-0.5 font-mono font-bold text-center text-xs"
-                      />
-                      <span className="text-stone-500 font-mono text-[11px]">мин</span>
-                    </div>
-                  </div>
-                </div>
+            {recipe.mashSchedule.length === 0 ? (
+              <div className="p-6 text-center border-2 border-dashed border-stone-200 dark:border-stone-800 rounded-xl space-y-2">
+                <p className="text-xs text-stone-600 dark:text-stone-300 font-semibold">
+                  Температурные паузы не заданы (0 пауз).
+                </p>
+                <p className="text-[11px] text-stone-400 max-w-sm mx-auto">
+                  Все паузы удалены. Выберите готовый профиль затирания выше или добавьте паузу вручную.
+                </p>
                 <button
-                  onClick={() => removeMashRest(rest.id)}
-                  disabled={recipe.mashSchedule.length <= 1}
-                  className="p-1 text-stone-400 hover:text-red-500 disabled:opacity-20"
+                  type="button"
+                  onClick={addMashRest}
+                  className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Добавить первую паузу</span>
                 </button>
               </div>
-            ))}
+            ) : (
+              recipe.mashSchedule.map((rest, idx) => (
+                <div
+                  key={rest.id || idx}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-stone-50 dark:bg-stone-800/60 border border-stone-200/80 dark:border-stone-700/60"
+                >
+                  <div className="w-6 h-6 rounded-full bg-amber-500 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                    {idx + 1}
+                  </div>
+                  <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2.5 min-w-0">
+                    <input
+                      type="text"
+                      value={rest.name}
+                      onChange={(e) => updateMashRest(rest.id, { name: e.target.value })}
+                      className="font-medium text-xs bg-transparent text-stone-900 dark:text-stone-100 focus:outline-none flex-1 min-w-0 py-0.5 border-b border-transparent focus:border-amber-400"
+                      placeholder="Название паузы..."
+                    />
+                    <div className="flex items-center gap-3 shrink-0 text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-stone-400 text-[11px]">Темп:</span>
+                        <input
+                          type="number"
+                          min="35"
+                          max="85"
+                          step="1"
+                          value={rest.tempC}
+                          onChange={(e) => updateMashRest(rest.id, { tempC: parseFloat(e.target.value) || 65 })}
+                          className="w-14 bg-white dark:bg-stone-700 border border-stone-300 dark:border-stone-600 rounded px-1.5 py-0.5 font-mono font-bold text-center text-xs"
+                        />
+                        <span className="text-stone-500 font-mono text-[11px]">°C</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-stone-400 text-[11px]">Время:</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max="120"
+                          step="5"
+                          value={rest.timeMin}
+                          onChange={(e) => updateMashRest(rest.id, { timeMin: parseInt(e.target.value, 10) || 15 })}
+                          className="w-14 bg-white dark:bg-stone-700 border border-stone-300 dark:border-stone-600 rounded px-1.5 py-0.5 font-mono font-bold text-center text-xs"
+                        />
+                        <span className="text-stone-500 font-mono text-[11px]">мин</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeMashRest(rest.id)}
+                    className="p-1 text-stone-400 hover:text-red-500 transition-colors cursor-pointer"
+                    title="Удалить эту паузу"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))
+            )}
 
             <button
               onClick={addMashRest}
@@ -1337,29 +1516,34 @@ export const RecipeBuilder: React.FC<Props> = ({
               <span>Авто-баланс</span>
             </button>
 
-            <select
-              onChange={(e) => {
-                if (e.target.value === '__CUSTOM__') {
-                  addHop();
-                } else {
-                  const found = COMMON_HOPS.find(h => h.name === e.target.value);
-                  if (found) addHop(found);
-                }
-                e.target.value = '';
+            {recipe.hops.length > 0 && (
+              <button
+                type="button"
+                onClick={() => updateParams({ hops: [] })}
+                className="px-2.5 py-1.5 rounded-lg border border-stone-200 dark:border-stone-700 hover:bg-red-50 dark:hover:bg-red-950/30 text-stone-500 hover:text-red-600 dark:hover:text-red-400 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                title="Полностью очистить список хмелей (удалить все позиции)"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Очистить хмель</span>
+              </button>
+            )}
+
+            {/* Поисковая строка добавления хмеля (мгновенная фильтрация по началу ввода букв) */}
+            <IngredientSearchSelect
+              type="hop"
+              onSelectHop={(h) => {
+                addHop({
+                  name: h.name,
+                  alphaAcid: h.alphaAcid,
+                  profile: h.profile,
+                  region: h.region
+                });
               }}
-              defaultValue=""
-              className="bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-750 text-stone-900 dark:text-stone-100 text-xs font-bold px-3 py-1.5 rounded-lg border border-stone-300 dark:border-stone-700 focus:outline-none cursor-pointer"
-            >
-              <option value="" disabled>+ Добавить хмель...</option>
-              <option value="__CUSTOM__">✍️ + Создать свой хмель</option>
-              <optgroup label="Каталог сортов хмеля">
-                {COMMON_HOPS.map(h => (
-                  <option key={h.name} value={h.name}>
-                    {h.name} ({h.alphaAcid}% AA)
-                  </option>
-                ))}
-              </optgroup>
-            </select>
+              onCustomAdd={(customName) => {
+                addHop(customName ? { name: customName, alphaAcid: 4.5 } : undefined);
+              }}
+              className="w-full sm:w-64 md:w-72"
+            />
 
             <button
               type="button"
@@ -1374,11 +1558,11 @@ export const RecipeBuilder: React.FC<Props> = ({
         </div>
 
         {/* Таблица хмелей */}
-        <div className="w-full max-w-full overflow-x-auto rounded-xl border border-stone-200/60 dark:border-stone-800/60">
-          <table className="w-full text-left text-xs min-w-[580px]">
+        <div className="w-full max-w-full overflow-x-auto rounded-xl border border-stone-200/60 dark:border-stone-800/60 swipe-scroll-x">
+          <table className="w-full text-left text-xs min-w-[620px]">
             <thead>
               <tr className="border-b border-stone-200 dark:border-stone-800 text-stone-500 dark:text-stone-400">
-                <th className="py-2 px-1">Хмель и альтернативы</th>
+                <th className="py-2 px-2 min-w-[200px]">Хмель и альтернативы</th>
                 <th className="py-2 px-1 w-24">Вес (г)</th>
                 <th className="py-2 px-1 w-24">Альфа-к-та (%)</th>
                 <th className="py-2 px-1 w-28">Время / Этап</th>
@@ -1388,17 +1572,65 @@ export const RecipeBuilder: React.FC<Props> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-stone-800/60">
-              {recipe.hops.map((hop) => {
+              {recipe.hops.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-stone-500 dark:text-stone-400">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <Flame className="w-8 h-8 text-stone-300 dark:text-stone-600" />
+                      <span className="font-bold text-xs text-stone-700 dark:text-stone-300">Список хмеля пуст (0 г, 0 IBU)</span>
+                      <span className="text-[11px] text-stone-400 max-w-md">
+                        Все хмели удалены. Найдите нужный сорт в строке поиска ниже или добавьте свой.
+                      </span>
+                      <div className="w-full max-w-xs mt-1">
+                        <IngredientSearchSelect
+                          type="hop"
+                          onSelectHop={(h) => addHop(h)}
+                          onCustomAdd={(customName) => {
+                            addHop(customName ? { name: customName, alphaAcid: 4.5 } : undefined);
+                          }}
+                          placeholder="🔍 Найти хмель (начните ввод)..."
+                          className="w-full"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => addHop()}
+                        className="mt-1 px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 font-semibold text-xs flex items-center gap-1.5 cursor-pointer shadow-2xs border border-stone-200 dark:border-stone-700"
+                      >
+                        <Plus className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>+ Создать хмель вручную</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                recipe.hops.map((hop) => {
                 const alts = getHopAlternatives(hop.name);
                 return (
                   <tr key={hop.id} className="hover:bg-amber-50/40 dark:hover:bg-stone-800/40 transition-colors">
-                    <td className="py-2 px-1">
+                    <td className="py-2 px-2 min-w-[200px] max-w-[280px]">
+                      {/* Поле ввода с компактным адаптивным шрифтом */}
                       <input
                         type="text"
                         value={hop.name}
                         onChange={(e) => updateHop(hop.id, { name: e.target.value })}
-                        className="w-full font-medium bg-transparent text-stone-900 dark:text-stone-100 focus:outline-none focus:border-b focus:border-amber-500"
+                        placeholder="Название хмеля..."
+                        className="w-full font-bold text-[11px] sm:text-xs text-stone-900 dark:text-stone-100 bg-transparent border-b border-transparent hover:border-stone-300 focus:border-amber-500 focus:outline-none py-0.5 truncate"
+                        title={hop.name}
                       />
+
+                      {/* Бегущая строка (Marquee Ticker) для длинных названий хмеля */}
+                      <div className="mt-0.5 max-w-full overflow-hidden">
+                        <MarqueeText
+                          text={hop.name}
+                          subtext={`${hop.alphaAcid}% AA`}
+                          prefix={<span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold shrink-0">🌿 Хмель:</span>}
+                          className="w-full"
+                          textClassName="text-[10px] sm:text-[11px] font-semibold text-stone-700 dark:text-stone-300"
+                          maxLengthThreshold={18}
+                          speedSec={15}
+                        />
+                      </div>
                       {/* Предложение альтернативных сортов хмеля при указании хмеля */}
                       {alts && alts.length > 0 && (
                         <div className="mt-1.5 p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700/60 text-xs space-y-1.5">
@@ -1504,16 +1736,17 @@ export const RecipeBuilder: React.FC<Props> = ({
                   </td>
                   <td className="py-2 px-1 text-right">
                     <button
+                      type="button"
                       onClick={() => removeHop(hop.id)}
-                      disabled={recipe.hops.length <= 1}
-                      className="p-1 text-stone-400 hover:text-red-600 disabled:opacity-30"
+                      className="p-1 text-stone-400 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer"
+                      title="Удалить этот хмель"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </td>
                 </tr>
               );
-            })}
+            }))}
             </tbody>
           </table>
         </div>

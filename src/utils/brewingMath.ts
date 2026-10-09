@@ -732,12 +732,41 @@ export const BJCP_STYLES: BJCPStyle[] = [
 ];
 
 /**
+ * Проверка, является ли стиль свободным/авторским без жестких рамок BJCP
+ */
+export function isNonBjcpStyle(styleIdOrName: string): boolean {
+  if (!styleIdOrName) return true;
+  const lower = styleIdOrName.trim().toLowerCase();
+  return (
+    lower.includes('без стиля') ||
+    lower.includes('свободный') ||
+    lower.includes('чистый') ||
+    lower.includes('авторск') ||
+    lower === 'custom' ||
+    lower === 'none'
+  );
+}
+
+/**
  * Валидация сбалансированности рецепта по выбранному стилю BJCP
  */
 export function validateRecipeAgainstStyle(
   calc: CalculatedBrewParams,
   styleIdOrName: string
 ): StyleValidation {
+  if (isNonBjcpStyle(styleIdOrName)) {
+    return {
+      isCompliant: true,
+      ogStatus: 'match',
+      fgStatus: 'match',
+      abvStatus: 'match',
+      ibuStatus: 'match',
+      ebcStatus: 'match',
+      balanceVerdict: 'Свободный авторский рецепт без ограничений BJCP. Параметры на усмотрение пивовара.',
+      recommendations: []
+    };
+  }
+
   const style = BJCP_STYLES.find(
     s => s.id === styleIdOrName || s.name.toLowerCase().includes(styleIdOrName.toLowerCase())
   );
@@ -750,8 +779,8 @@ export function validateRecipeAgainstStyle(
       abvStatus: 'match',
       ibuStatus: 'match',
       ebcStatus: 'match',
-      balanceVerdict: 'Свободный крафтовый стиль. Параметры гармоничны.',
-      recommendations: ['Рецепт не привязан к жесткому стилю BJCP. Ограничений нет.']
+      balanceVerdict: 'Свободный авторский рецепт. Стили BJCP не применяются.',
+      recommendations: []
     };
   }
 

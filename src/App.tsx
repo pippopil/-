@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ActiveTab,
   Navbar
@@ -84,6 +84,61 @@ export default function App() {
       document.body.scrollTop = 0;
     }
   }, []);
+
+  // Плавный мобильный свайп между основными вкладками (Варка <-> Рецепты <-> Склад <-> Брожение)
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length !== 1) {
+      touchStartRef.current = null;
+      return;
+    }
+    const target = e.target as HTMLElement | null;
+    // Если жест начался на интерактивном элементе (поле ввода, кнопка, выпадающий список)
+    // или внутри таблицы/контейнера со скроллом — отменяем перехват таба, чтобы не подвешивать приложение
+    if (
+      target &&
+      target.closest(
+        'input, textarea, select, button, [role="button"], table, tr, td, th, [class*="overflow-x"], .swipe-scroll-x, [data-no-swipe]'
+      )
+    ) {
+      touchStartRef.current = null;
+      return;
+    }
+    const touch = e.touches[0];
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: Date.now()
+    };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartRef.current || e.changedTouches.length !== 1) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - touchStartRef.current.x;
+    const dy = touch.clientY - touchStartRef.current.y;
+    const dt = Date.now() - touchStartRef.current.time;
+    touchStartRef.current = null;
+
+    // Игнорируем длинные удержания (> 450 мс) или выраженные вертикальные движения
+    // Для переключения таба нужен четкий горизонтальный жест (минимум 75px и в 2.2 раза больше вертикального)
+    if (dt > 450 || Math.abs(dx) < 75 || Math.abs(dx) < Math.abs(dy) * 2.2) {
+      return;
+    }
+
+    const mainTabs: ActiveTab[] = ['calculator', 'catalogue', 'matcher', 'calendar'];
+    const currentIndex = mainTabs.indexOf(activeTab);
+    if (currentIndex === -1) return;
+
+    if (dx < -75 && currentIndex < mainTabs.length - 1) {
+      // Свайп влево: переход к следующей вкладке
+      handleTabChange(mainTabs[currentIndex + 1]);
+    } else if (dx > 75 && currentIndex > 0) {
+      // Свайп вправо: переход к предыдущей вкладке
+      handleTabChange(mainTabs[currentIndex - 1]);
+    }
+  };
 
   // При открытии любой вкладки страница всегда начинается сначала (с самого верха)
   useEffect(() => {
@@ -626,7 +681,11 @@ export default function App() {
       />
 
       {/* Основной контент */}
-      <main className="no-print w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-36 sm:pb-16 pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))]">
+      <main
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="no-print w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6 pb-36 sm:pb-16 pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))]"
+      >
         {activeTab === 'calculator' && (
           <RecipeBuilder
             recipe={currentRecipe}

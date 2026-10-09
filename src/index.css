@@ -22,8 +22,8 @@
     -webkit-text-size-adjust: 100%;
     min-height: 100%;
     max-width: 100vw;
-    overflow-x: clip;
-    touch-action: pan-y;
+    overflow-x: hidden;
+    touch-action: manipulation;
   }
 
   html.dark {
@@ -35,24 +35,61 @@
     max-width: 100vw;
     margin: 0;
     padding: 0;
-    overflow-x: clip;
+    overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
+    touch-action: manipulation;
   }
 
   #root {
     width: 100%;
     max-width: 100vw;
     min-height: 100%;
-    overflow-x: clip;
-    touch-action: pan-y;
+    touch-action: manipulation;
   }
 }
 
 /* Убираем синюю вспышку тапа на мобильных экранах */
 * {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Горизонтальный свайп и плавная прокрутка без зависаний на PWA */
+.swipe-scroll-x,
+[class*="overflow-x-auto"] {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  overscroll-behavior-x: contain;
+}
+
+/* Бегущая строка (Marquee / Ticker) для длинных названий солода и стилей пива */
+@keyframes marquee-scroll {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.marquee-track {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: marquee-scroll 18s linear infinite;
+  will-change: transform;
+}
+
+.marquee-container {
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+  mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 3%, black 97%, transparent);
+}
+
+.marquee-container:hover .marquee-track,
+.marquee-container:active .marquee-track {
+  animation-play-state: paused;
 }
 
 /* Предотвращает нежелательный автозум в iOS Safari при тапе по полям ввода на мобильных */

@@ -660,7 +660,7 @@ export const IngredientMatcher: React.FC<Props> = ({
                             </span>
                           )}
                         </div>
-                        <div className="font-bold text-xs text-stone-900 dark:text-stone-100 line-clamp-1 mt-0.5">
+                        <div className="font-bold text-xs text-stone-900 dark:text-stone-100 line-clamp-2 leading-snug break-words mt-0.5 min-h-[2rem]" title={grain.name}>
                           {grain.name}
                         </div>
                         <div className="text-[10px] text-stone-500 font-mono">
@@ -708,7 +708,7 @@ export const IngredientMatcher: React.FC<Props> = ({
                             </span>
                           )}
                         </div>
-                        <div className="font-bold text-xs text-stone-900 dark:text-stone-100 line-clamp-1 mt-0.5">
+                        <div className="font-bold text-xs text-stone-900 dark:text-stone-100 line-clamp-2 leading-snug break-words mt-0.5 min-h-[2rem]" title={hop.name}>
                           {hop.name}
                         </div>
                         <div className="text-[10px] text-stone-500 font-mono">

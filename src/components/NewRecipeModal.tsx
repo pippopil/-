@@ -13,11 +13,13 @@ import {
   ArrowRight,
   Info,
   Minus,
-  Plus
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { Recipe } from '../types/brewing';
 import { BJCP_STYLES, calculateBrewMetrics, ebcToHex } from '../utils/brewingMath';
 import { COMMON_YEASTS } from '../data/defaultData';
+import { MarqueeText } from './MarqueeText';
 
 interface Props {
   isOpen: boolean;
@@ -39,6 +41,7 @@ export const NewRecipeModal: React.FC<Props> = ({
   const [blankBatchSizeL, setBlankBatchSizeL] = useState<string>(String(defaultBatchSizeL || 30));
   const [blankEfficiency, setBlankEfficiency] = useState<string>('72');
   const [blankBoilTime, setBlankBoilTime] = useState<string>('60');
+  const [blankStartWithEmpty, setBlankStartWithEmpty] = useState<boolean>(true);
 
   // Синхронизируем начальные значения при открытии окна
   useEffect(() => {
@@ -94,12 +97,57 @@ export const NewRecipeModal: React.FC<Props> = ({
     const finalEfficiency = Math.max(40, Math.min(95, parseFloat(blankEfficiency) || 72));
     const finalBoilTime = Math.max(30, Math.min(180, parseInt(blankBoilTime, 10) || 60));
 
+    const initialGrains = blankStartWithEmpty
+      ? []
+      : [
+          {
+            id: `grain_${Date.now()}_1`,
+            name: 'Курский Пилснер (Pilsner Malt)',
+            weightKg: Number(((finalBatchSizeL * 0.22)).toFixed(1)),
+            potentialSg: 1.037,
+            colorEbc: 3.8,
+            type: 'base' as const
+          }
+        ];
+
+    const initialHops = blankStartWithEmpty
+      ? []
+      : [
+          {
+            id: `hop_${Date.now()}_1`,
+            name: 'Хмель на горечь (напр. Magnum / Tradition)',
+            weightG: Math.max(5, Math.round(finalBatchSizeL * 1.0)),
+            alphaAcid: 12.0,
+            boilTimeMin: finalBoilTime,
+            use: 'boil' as const
+          }
+        ];
+
+    const initialMash = blankStartWithEmpty
+      ? []
+      : [
+          {
+            id: 'rest_1',
+            name: 'Осахаривание (Универсальная пауза)',
+            tempC: 66,
+            timeMin: 60,
+            type: 'maltose' as const
+          },
+          {
+            id: 'rest_2',
+            name: 'Мэшаут',
+            tempC: 78,
+            timeMin: 10,
+            type: 'mashout' as const
+          }
+        ];
+
     const newRecipe: Recipe = {
       id: `recipe_custom_${Date.now()}`,
       name: blankName.trim() || 'Новый рецепт (с нуля)',
-      style: 'Авторский стиль',
+      style: 'Без стиля (Свободный рецепт)',
       category: 'Авторские рецепты',
-      description: 'Чистый авторский шаблон, разработанный пивоваром с нуля.',
+      description: 'Чистый авторский шаблон, созданный пивоваром с нуля без ограничений BJCP.',
       author: 'Вы',
       batchSizeL: finalBatchSizeL,
       boilTimeMin: finalBoilTime,
@@ -108,42 +156,9 @@ export const NewRecipeModal: React.FC<Props> = ({
       grainTempC: 20,
       targetCarbonationVol: 2.4,
       beerTempAtBottlingC: 19,
-      grains: [
-        {
-          id: `grain_${Date.now()}_1`,
-          name: 'Курский Пилснер (Pilsner Malt)',
-          weightKg: Number(((finalBatchSizeL * 0.22)).toFixed(1)), // ~6.6 кг на 30 л
-          potentialSg: 1.037,
-          colorEbc: 3.8,
-          type: 'base'
-        }
-      ],
-      hops: [
-        {
-          id: `hop_${Date.now()}_1`,
-          name: 'Хмель на горечь (напр. Magnum / Tradition)',
-          weightG: Math.max(5, Math.round(finalBatchSizeL * 1.0)),
-          alphaAcid: 12.0,
-          boilTimeMin: finalBoilTime,
-          use: 'boil'
-        }
-      ],
-      mashSchedule: [
-        {
-          id: 'rest_1',
-          name: 'Осахаривание (Универсальная пауза)',
-          tempC: 66,
-          timeMin: 60,
-          type: 'maltose'
-        },
-        {
-          id: 'rest_2',
-          name: 'Мэшаут',
-          tempC: 78,
-          timeMin: 10,
-          type: 'mashout'
-        }
-      ],
+      grains: initialGrains,
+      hops: initialHops,
+      mashSchedule: initialMash,
       yeast: {
         name: 'SafAle US-05',
         lab: 'Fermentis',
@@ -155,7 +170,7 @@ export const NewRecipeModal: React.FC<Props> = ({
         styleDescription: 'Универсальные элевые дрожжи с нейтральным чистым профилем'
       },
       calculated: {} as any,
-      tags: ['Чистый шаблон', 'С нуля', 'Авторский'],
+      tags: ['Чистый шаблон', 'Свободный рецепт', 'Без ограничений BJCP'],
       isCustom: true,
       collection: 'my_recipes',
       createdAt: new Date().toISOString(),
@@ -635,6 +650,51 @@ export const NewRecipeModal: React.FC<Props> = ({
                     </div>
                   </div>
                 </div>
+
+                {/* Выбор начального наполнения: пустой или базовый солод */}
+                <div className="p-3.5 rounded-xl bg-stone-50 dark:bg-stone-800/50 border border-stone-200/80 dark:border-stone-700 space-y-2">
+                  <div className="text-xs font-bold text-stone-800 dark:text-stone-200 flex items-center justify-between">
+                    <span>Стартовое наполнение рецепта:</span>
+                    <span className="text-[11px] text-amber-700 dark:text-amber-400 font-medium">Стили BJCP отключены</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setBlankStartWithEmpty(true)}
+                      className={`p-3 rounded-xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                        blankStartWithEmpty
+                          ? 'bg-amber-500/15 border-amber-500 text-amber-950 dark:text-amber-200 shadow-2xs'
+                          : 'bg-white dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-amber-300'
+                      }`}
+                    >
+                      <Trash2 className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                      <div>
+                        <div className="font-bold text-stone-900 dark:text-white">Полностью чистый лист</div>
+                        <div className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">
+                          0 солода, 0 хмеля, 0 пауз — вводите только свои ингредиенты
+                        </div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setBlankStartWithEmpty(false)}
+                      className={`p-3 rounded-xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                        !blankStartWithEmpty
+                          ? 'bg-amber-500/15 border-amber-500 text-amber-950 dark:text-amber-200 shadow-2xs'
+                          : 'bg-white dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:border-amber-300'
+                      }`}
+                    >
+                      <Layers className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                      <div>
+                        <div className="font-bold text-stone-900 dark:text-white">Базовый Курский шаблон</div>
+                        <div className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">
+                          Курский Пилснер и 1 хмель на горечь (можно удалить или заменить)
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div className="pt-2">
@@ -780,12 +840,18 @@ export const NewRecipeModal: React.FC<Props> = ({
               {activeStyle && (
                 <div className="p-4 rounded-2xl bg-stone-50 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700 space-y-2.5">
                   <div className="flex items-start justify-between gap-2">
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <div className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
                         Выбранный стиль BJCP:
                       </div>
-                      <div className="text-sm font-black text-stone-900 dark:text-white">
-                        {activeStyle.name} ({activeStyle.nameEn})
+                      <div className="mt-0.5 max-w-full overflow-hidden">
+                        <MarqueeText
+                          text={activeStyle.name}
+                          subtext={activeStyle.nameEn}
+                          textClassName="text-sm font-black text-stone-900 dark:text-white"
+                          maxLengthThreshold={25}
+                          speedSec={15}
+                        />
                       </div>
                     </div>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 shrink-0">

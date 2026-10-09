@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { OnlineRecipeHubModal } from './OnlineRecipeHubModal';
 import { BrewingHistoryCallout } from './BrewingHistoryCallout';
+import { MarqueeText } from './MarqueeText';
 
 interface Props {
   recipes: Recipe[];
@@ -279,12 +280,17 @@ export const RecipeCatalogue: React.FC<Props> = ({
                     >
                       <Beer className="w-5 h-5 text-white/90 drop-shadow" />
                     </div>
-                    <div>
-                      <h3 className="font-extrabold text-base text-stone-900 dark:text-white leading-tight group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                    <div className="min-w-0">
+                      <h3 className="font-extrabold text-base text-stone-900 dark:text-white leading-tight group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors truncate">
                         {recipe.name}
                       </h3>
-                      <div className="text-[11px] text-stone-500 font-medium mt-0.5">
-                        {recipe.style}
+                      <div className="mt-0.5 max-w-[180px] sm:max-w-[260px] overflow-hidden">
+                        <MarqueeText
+                          text={recipe.style}
+                          textClassName="text-[11px] text-stone-500 dark:text-stone-400 font-medium"
+                          maxLengthThreshold={22}
+                          speedSec={15}
+                        />
                       </div>
                     </div>
                   </div>
@@ -341,14 +347,30 @@ export const RecipeCatalogue: React.FC<Props> = ({
                 {/* Теги хмелей и засыпи */}
                 <div className="space-y-1 text-[11px]">
                   <div className="flex items-center gap-1 text-stone-500">
-                    <span className="font-semibold text-stone-700 dark:text-stone-300">Хмели:</span>
-                    <span className="line-clamp-1">
-                      {recipe.hops.map(h => `${h.name} (${h.weightG}г)`).join(', ')}
-                    </span>
+                    <span className="font-semibold text-stone-700 dark:text-stone-300 shrink-0">🌾 Солода:</span>
+                    <div className="flex-1 min-w-0">
+                      <MarqueeText
+                        text={recipe.grains.map(g => `${g.name} (${g.weightKg} кг)`).join(', ')}
+                        textClassName="text-[11px] text-stone-600 dark:text-stone-400 font-medium"
+                        maxLengthThreshold={26}
+                        speedSec={18}
+                      />
+                    </div>
                   </div>
                   <div className="flex items-center gap-1 text-stone-500">
-                    <span className="font-semibold text-stone-700 dark:text-stone-300">Дрожжи:</span>
-                    <span className="line-clamp-1">{recipe.yeast.name}</span>
+                    <span className="font-semibold text-stone-700 dark:text-stone-300 shrink-0">🌿 Хмели:</span>
+                    <div className="flex-1 min-w-0">
+                      <MarqueeText
+                        text={recipe.hops.map(h => `${h.name} (${h.weightG}г)`).join(', ')}
+                        textClassName="text-[11px] text-stone-600 dark:text-stone-400 font-medium"
+                        maxLengthThreshold={26}
+                        speedSec={18}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 text-stone-500">
+                    <span className="font-semibold text-stone-700 dark:text-stone-300 shrink-0">🧪 Дрожжи:</span>
+                    <span className="truncate">{recipe.yeast.name}</span>
                   </div>
 
                   {/* Блок доступных аналогов (Курский солод и альтернативы хмеля) */}

@@ -5,7 +5,8 @@ import {
   ebcToHex,
   calculateBrewMetrics,
   validateRecipeAgainstStyle,
-  balanceRecipeForStyle
+  balanceRecipeForStyle,
+  isNonBjcpStyle
 } from '../src/utils/brewingMath';
 import { GrainItem, HopItem, Recipe, Yeast } from '../src/types/brewing';
 
@@ -542,6 +543,50 @@ describe('Brewing Math Unit Tests (Калькулятор МастерВарка
       });
       expect(placeholderGrain.name).toBe('Курский Карамельный 150 (Caramel 150 EBC)');
       expect(placeholderGrain.type).toBe('caramel');
+    });
+
+    it('handles blank non-BJCP templates and empty ingredients safely', () => {
+      // 1. isNonBjcpStyle checks
+      expect(isNonBjcpStyle('Без стиля (Свободный рецепт)')).toBe(true);
+      expect(isNonBjcpStyle('Авторский стиль')).toBe(true);
+      expect(isNonBjcpStyle('Чистый шаблон')).toBe(true);
+      expect(isNonBjcpStyle('German Pils')).toBe(false);
+      expect(isNonBjcpStyle('American IPA')).toBe(false);
+
+      // 2. validateRecipeAgainstStyle for non-BJCP style
+      const dummyCalc = calculateBrewMetrics({
+        batchSizeL: 30,
+        boilTimeMin: 60,
+        efficiencyPercent: 72,
+        grainRatioLPerKg: 3.5,
+        grainTempC: 20,
+        targetCarbonationVol: 2.4,
+        beerTempAtBottlingC: 19,
+        grains: [],
+        hops: [],
+        yeast: {
+          name: 'US-05',
+          lab: 'Fermentis',
+          form: 'dry',
+          type: 'ale',
+          cellsPerGramOrVial: 20,
+          attenuationPercent: 80,
+          tempRange: [18, 24]
+        }
+      });
+
+      const validation = validateRecipeAgainstStyle(dummyCalc, 'Без стиля (Свободный рецепт)');
+      expect(validation.isCompliant).toBe(true);
+      expect(validation.recommendations.length).toBe(0);
+
+      // 3. calculateBrewMetrics with empty ingredients returns clean numeric metrics
+      expect(dummyCalc.ogSg).toBe(1.0);
+      expect(dummyCalc.fgSg).toBe(1.0);
+      expect(dummyCalc.abv).toBe(0.0);
+      expect(dummyCalc.ibu).toBe(0);
+      expect(dummyCalc.totalGrainWeightKg).toBe(0);
+      expect(dummyCalc.strikeWaterL).toBe(0);
+      expect(Number.isFinite(dummyCalc.spargeWaterL)).toBe(true);
     });
   });
 });

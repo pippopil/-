@@ -17,7 +17,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const portArgIndex = process.argv.indexOf('--port');
+const cliPort = portArgIndex !== -1 ? Number(process.argv[portArgIndex + 1]) : null;
+const isProd = process.env.NODE_ENV === 'production';
+const PORT = cliPort || (isProd && process.env.PORT ? Number(process.env.PORT) : 3000);
 
 // Безопасный лимит на JSON-пейлоад (5MB для поддержки BeerXML и изображений без риска переполнения памяти)
 app.use(express.json({ limit: '5mb' }));
@@ -60,8 +63,6 @@ app.use('/api/project', createProjectRouter(__dirname));
 
 // ======================== DEV & PROD SERVING ========================
 async function startServer() {
-  const isProd = process.env.NODE_ENV === 'production';
-
   if (!isProd) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
