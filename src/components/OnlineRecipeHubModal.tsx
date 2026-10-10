@@ -20,6 +20,7 @@ import {
   Plus,
   Filter
 } from 'lucide-react';
+import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { Recipe } from '../types/brewing';
 import {
   ONLINE_RECIPES_CATALOG,
@@ -168,18 +169,98 @@ export const OnlineRecipeHubModal: React.FC<Props> = ({
     setUrlSuccessRecipe(null);
 
     try {
-      const response = await fetch('/api/recipes/fetch-url', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: targetUrl })
-      });
+      let content = '';
 
-      const data = await response.json();
-      if (!data.success) {
-        throw new Error(data.error || 'Не удалось загрузить данные по ссылке');
+      // 1. Нативная загрузка через Capacitor на Android (без CORS и локального сервера)
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const nativeRes = await CapacitorHttp.get({
+            url: targetUrl,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36 MasterVarka/1.0',
+              'Accept': 'text/html,application/xhtml+xml,application/xml,application/json,text/plain,*/*'
+            }
+          });
+          if (nativeRes.status >= 200 && nativeRes.status < 400 && nativeRes.data) {
+            content = typeof nativeRes.data === 'string' ? nativeRes.data : JSON.stringify(nativeRes.data);
+          }
+        } catch (nativeErr) {
+          console.warn('Capacitor native fetch error:', nativeErr);
+        }
       }
 
-      const content = data.content as string;
+      // 2. Если контент не получен, пробуем через серверный Express прокси (/api/recipes/fetch-url)
+      if (!content) {
+        try {
+          const response = await fetch('/api/recipes/fetch-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: targetUrl })
+          });
+
+          const ct = response.headers.get('content-type') || '';
+          if (response.ok && ct.includes('application/json')) {
+            const data = await response.json();
+            if (data.success && data.content) {
+              content = data.content as string;
+            }
+          }
+        } catch (srvErr) {
+          console.warn('Backend proxy fetch failed:', srvErr);
+        }
+      }
+
+      // 3. Fallback: прямой fetch (для GitHub raw, BeerXML, открытых API или сайтов)
+      if (!content) {
+        try {
+          const directRes = await fetch(targetUrl);
+          if (directRes.ok) {
+            const txt = await directRes.text();
+            // Разрешаем, если это BeerXML, JSON или страница Бир.РФ (не пустой шаблон index.html приложения)
+            if (txt && (txt.includes('<RECIPE') || txt.includes('beer_recipes') || txt.includes('Зерновые') || (!txt.includes('id="root"') && !txt.includes('МастерВарка')))) {
+              content = txt;
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      // 4. Fallback: открытый CORS-прокси AllOrigins (для мобильных и браузерных запросов)
+      if (!content) {
+        try {
+          const proxyRes = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`);
+          if (proxyRes.ok) {
+            const txt = await proxyRes.text();
+            if (txt && txt.length > 50) {
+              content = txt;
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      // 5. Fallback: открытый CORS-прокси corsproxy.io
+      if (!content) {
+        try {
+          const proxyRes = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`);
+          if (proxyRes.ok) {
+            const txt = await proxyRes.text();
+            if (txt && txt.length > 50) {
+              content = txt;
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      if (!content) {
+        throw new Error(
+          'Не удалось автоматически загрузить страницу рецепта по указанной ссылке. Проверьте адрес или вставьте текст/BeerXML в поле «Вставить BeerXML / Текст» ниже.'
+        );
+      }
 
       // Попытка 1: Парсинг как BeerXML
       if (content.includes('<RECIPE') || content.includes('<RECIPES') || targetUrl.endsWith('.xml') || targetUrl.endsWith('.beerxml')) {
@@ -308,17 +389,32 @@ export const OnlineRecipeHubModal: React.FC<Props> = ({
     }
   };
 
-  // Парсинг вставленного текста напрямую
+  // Парсинг вставленного текста напрямую (BeerXML или скопированная страница Бир.РФ)
   const handleParseRawText = () => {
-    if (!rawText.trim()) return;
+    const text = rawText.trim();
+    if (!text) return;
     try {
-      const parsed = importFromBeerXml(rawText);
-      if (parsed) {
-        setUrlSuccessRecipe(parsed);
-        setUrlError(null);
-      } else {
-        setUrlError('Не удалось распознать формат BeerXML. Проверьте теги <RECIPE> и <RECIPES>.');
+      // 1. Попытка парсинга как BeerXML
+      if (text.includes('<RECIPE') || text.includes('<RECIPES')) {
+        const parsed = importFromBeerXml(text);
+        if (parsed) {
+          setUrlSuccessRecipe(parsed);
+          setUrlError(null);
+          return;
+        }
       }
+
+      // 2. Попытка парсинга как HTML / текст рецепта с Бир.РФ
+      if (text.includes('Зерновые') || text.includes('Параметры затирания') || text.includes('Ингредиенты') || text.includes('beer_recipes')) {
+        const parsedBir = parseBirRfRecipe(text, 'Вставленный текст');
+        if (parsedBir) {
+          setUrlSuccessRecipe(parsedBir);
+          setUrlError(null);
+          return;
+        }
+      }
+
+      setUrlError('Не удалось распознать формат. Поддерживаются BeerXML теги (<RECIPE>) или скопированный текст со страницы Бир.РФ.');
     } catch (e: any) {
       setUrlError('Ошибка парсинга: ' + e.message);
     }

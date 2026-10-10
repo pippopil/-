@@ -66,9 +66,14 @@ export const COMMON_GRAINS = [
   { name: 'Black Malt (Черный солод 1300 EBC)', potentialSg: 1.025, colorEbc: 1300.0, type: 'roasted' as const, group: 'Импортные жженые' },
 
   // 5. Несоложенка и хлопья
-  { name: 'Flaked Oats (Овсяные хлопья для тела/крема)', potentialSg: 1.032, colorEbc: 2.0, type: 'adjunct' as const, group: 'Хлопья' },
-  { name: 'Flaked Barley (Ячменные хлопья)', potentialSg: 1.032, colorEbc: 3.5, type: 'adjunct' as const, group: 'Хлопья' },
-  { name: 'Flaked Wheat (Пшеничные хлопья для витбиров)', potentialSg: 1.035, colorEbc: 3.0, type: 'adjunct' as const, group: 'Хлопья' }
+  { name: 'Овсяные хлопья / Flaked Oats (для тела/крема)', potentialSg: 1.033, colorEbc: 2.5, type: 'adjunct' as const, group: 'Хлопья и несоложенка' },
+  { name: 'Кукурузные хлопья / Flaked Corn (кукуруза)', potentialSg: 1.037, colorEbc: 1.5, type: 'adjunct' as const, group: 'Хлопья и несоложенка' },
+  { name: 'Ячменные хлопья / Flaked Barley (для стаутов)', potentialSg: 1.032, colorEbc: 3.5, type: 'adjunct' as const, group: 'Хлопья и несоложенка' },
+  { name: 'Пшеничные хлопья / Flaked Wheat (для витбиров)', potentialSg: 1.035, colorEbc: 3.0, type: 'adjunct' as const, group: 'Хлопья и несоложенка' },
+  { name: 'Ржаные хлопья / Flaked Rye (ржаная пряность)', potentialSg: 1.034, colorEbc: 4.0, type: 'adjunct' as const, group: 'Хлопья и несоложенка' },
+  { name: 'Рисовые хлопья / Flaked Rice (легкое тело/хруст)', potentialSg: 1.038, colorEbc: 1.2, type: 'adjunct' as const, group: 'Хлопья и несоложенка' },
+  { name: 'Несоложеный ячмень', potentialSg: 1.032, colorEbc: 3.0, type: 'adjunct' as const, group: 'Хлопья и несоложенка' },
+  { name: 'Несоложеная пшеница (для Бланша / Witbier)', potentialSg: 1.036, colorEbc: 3.5, type: 'adjunct' as const, group: 'Хлопья и несоложенка' }
 ];
 
 // Полный каталог хмелей
@@ -640,7 +645,8 @@ function createRecipe(
   targetCarbonationVol: number,
   beerTempAtBottlingC: number,
   tags: string[],
-  collection: Recipe['collection'] = undefined
+  collection: Recipe['collection'] = undefined,
+  otherIngredients: Recipe['otherIngredients'] = []
 ): Recipe {
   // По требованию: заполнение рецепта всегда начинается с 30 литров объема партии, а не 20
   let finalBatchSizeL = batchSizeL;
@@ -664,7 +670,8 @@ function createRecipe(
     beerTempAtBottlingC,
     grains: finalGrains,
     hops: finalHops,
-    yeast
+    yeast,
+    otherIngredients
   });
 
   return {
@@ -685,6 +692,7 @@ function createRecipe(
     hops: finalHops,
     yeast,
     mashSchedule,
+    otherIngredients,
     calculated,
     tags,
     collection,
@@ -959,7 +967,12 @@ export const INITIAL_RECIPES: Recipe[] = [
     ],
     COMMON_YEASTS[3],
     2.7, 20,
-    ['Бланш', 'Витбир', 'Кориандр', 'Апельсин', 'Бельгия']
+    ['Бланш', 'Витбир', 'Кориандр', 'Апельсин', 'Бельгия'],
+    undefined,
+    [
+      { id: 'oth_blanche_1', name: 'Кориандр молотый', amount: 15, unit: 'g', stage: 'boil', timeMinOrDays: 5, type: 'spice', notes: 'Растереть перед внесением' },
+      { id: 'oth_blanche_2', name: 'Цедра апельсина (горького/сладкого)', amount: 20, unit: 'g', stage: 'boil', timeMinOrDays: 5, type: 'spice', notes: 'Свежая или сушеная цедра' }
+    ]
   ),
 
   // 10. Русский имперский стаут (RIS)

@@ -34,6 +34,7 @@ import {
   Sparkles,
   Calendar,
   Save,
+  Copy,
   CheckCircle2,
   AlertTriangle,
   Info,
@@ -53,6 +54,7 @@ import { SafeNumberInput } from './SafeNumberInput';
 import { BrewingHistoryCallout } from './BrewingHistoryCallout';
 import { MarqueeText } from './MarqueeText';
 import { IngredientSearchSelect } from './IngredientSearchSelect';
+import { OtherIngredientsSection } from './OtherIngredientsSection';
 
 interface Props {
   recipe: Recipe;
@@ -123,7 +125,8 @@ export const RecipeBuilder: React.FC<Props> = ({
       beerTempAtBottlingC: nextRecipe.beerTempAtBottlingC,
       grains: nextRecipe.grains,
       hops: nextRecipe.hops,
-      yeast: nextRecipe.yeast
+      yeast: nextRecipe.yeast,
+      otherIngredients: nextRecipe.otherIngredients
     });
     onUpdateRecipe({
       ...nextRecipe,
@@ -363,18 +366,50 @@ export const RecipeBuilder: React.FC<Props> = ({
       recipe.batchSizeL,
       targetScaleL
     );
+    const factor = targetScaleL / Math.max(1, recipe.batchSizeL);
+    const scaledOther = (recipe.otherIngredients || []).map(item => ({
+      ...item,
+      amount: Number((item.amount * factor).toFixed(item.unit === 'kg' ? 2 : 1))
+    }));
     updateParams({
       batchSizeL: targetScaleL,
       grains: scaledGrains,
-      hops: scaledHops
+      hops: scaledHops,
+      otherIngredients: scaledOther
     });
     setScaleModalOpen(false);
   };
 
   const handleSave = () => {
-    onSaveRecipe(recipe);
+    // Гарантируем надежное сохранение в авторские рецепты
+    const isAlreadyCustom = recipe.isCustom;
+    const authorRecipe: Recipe = {
+      ...recipe,
+      isCustom: true,
+      collection: 'my_recipes',
+      author: recipe.author && recipe.author !== 'МастерВарка' ? recipe.author : 'Вы',
+      id: isAlreadyCustom ? recipe.id : `recipe_custom_${Date.now()}`,
+      updatedAt: new Date().toISOString()
+    };
+    onSaveRecipe(authorRecipe);
     setSaveSuccessNotice(true);
-    setTimeout(() => setSaveSuccessNotice(false), 3000);
+    setTimeout(() => setSaveSuccessNotice(false), 3500);
+  };
+
+  const handleSaveCopy = () => {
+    const copyRecipe: Recipe = {
+      ...recipe,
+      id: `recipe_custom_${Date.now()}`,
+      name: recipe.name.startsWith('Копия: ') ? recipe.name : `Копия: ${recipe.name}`,
+      isCustom: true,
+      collection: 'my_recipes',
+      author: 'Вы',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    onSaveRecipe(copyRecipe);
+    setSaveSuccessNotice(true);
+    setTimeout(() => setSaveSuccessNotice(false), 3500);
   };
 
   const beerColorHex = ebcToHex(recipe.calculated.ebc);
@@ -485,9 +520,21 @@ export const RecipeBuilder: React.FC<Props> = ({
               type="button"
               onClick={handleSave}
               className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 text-xs font-black flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+              title="Сохранить в Мои авторские рецепты"
             >
               <Save className="w-4 h-4" />
-              <span>Сохранить</span>
+              <span>Сохранить в авторские 🛠️</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSaveCopy}
+              className="px-3 py-2 rounded-xl bg-stone-100 hover:bg-amber-100/70 dark:bg-stone-800 dark:hover:bg-stone-700 border border-stone-200 dark:border-stone-700 text-stone-800 dark:text-stone-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              title="Создать независимую авторскую копию этого рецепта в «Мои авторские»"
+            >
+              <Copy className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <span className="hidden sm:inline">+ Копия в авторские</span>
+              <span className="sm:hidden">+ Копия</span>
             </button>
 
             <button
@@ -531,9 +578,9 @@ export const RecipeBuilder: React.FC<Props> = ({
         </div>
 
         {saveSuccessNotice && (
-          <div className="mt-3 p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 text-xs font-medium flex items-center gap-2 border border-emerald-200 dark:border-emerald-800">
+          <div className="mt-3 p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 text-xs font-medium flex items-center gap-2 border border-emerald-200 dark:border-emerald-800 animate-in fade-in">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>Рецепт «{recipe.name}» успешно сохранен в вашу базу!</span>
+            <span>Рецепт «{recipe.name}» успешно сохранен в «Мои авторские» 🛠️!</span>
           </div>
         )}
 
@@ -1751,6 +1798,13 @@ export const RecipeBuilder: React.FC<Props> = ({
           </table>
         </div>
       </div>
+
+      {/* Секция: Дополнительные ингредиенты (хлопья, несоложенка, мёд, сахара, фрукты, специи, мох, добавки) */}
+      <OtherIngredientsSection
+        ingredients={recipe.otherIngredients || []}
+        onChange={(updated) => updateParams({ otherIngredients: updated })}
+        batchSizeL={recipe.batchSizeL}
+      />
 
       {/* Секция 4: Дрожжи (Pitch Rate) и Карбонизация (Праймер) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

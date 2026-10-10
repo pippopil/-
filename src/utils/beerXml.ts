@@ -1,4 +1,4 @@
-import { GrainItem, HopItem, MashRest, Recipe, Yeast } from '../types/brewing';
+import { GrainItem, HopItem, MashRest, OtherIngredientItem, Recipe, Yeast } from '../types/brewing';
 import { calculateBrewMetrics } from './brewingMath';
 
 /**
@@ -36,6 +36,18 @@ export function exportToBeerXml(recipe: Recipe): string {
         <END_TEMP>${step.tempC}</END_TEMP>
       </MASH_STEP>`).join('');
 
+  const miscNodes = (recipe.otherIngredients || []).map(m => `
+      <MISC>
+        <NAME>${escapeXml(m.name)}</NAME>
+        <VERSION>1</VERSION>
+        <TYPE>${m.type === 'fining' ? 'Fining' : m.type === 'spice' ? 'Spice' : m.type === 'water_agent' ? 'Water Agent' : m.type === 'herb' ? 'Herb' : m.type === 'flavor' ? 'Flavor' : 'Other'}</TYPE>
+        <USE>${m.stage === 'mash' ? 'Mash' : m.stage === 'primary' ? 'Primary' : m.stage === 'secondary' ? 'Secondary' : m.stage === 'bottling' ? 'Bottling' : 'Boil'}</USE>
+        <TIME>${m.timeMinOrDays || 10}</TIME>
+        <AMOUNT>${m.unit === 'g' || m.unit === 'ml' ? (m.amount / 1000).toFixed(4) : m.amount.toFixed(4)}</AMOUNT>
+        <AMOUNT_IS_WEIGHT>${m.unit === 'ml' ? 'FALSE' : 'TRUE'}</AMOUNT_IS_WEIGHT>
+        <NOTES>${escapeXml(m.notes || '')}</NOTES>
+      </MISC>`).join('');
+
   return `<?xml version="1.0" encoding="UTF-8"?>
 <RECIPES>
   <RECIPE>
@@ -61,11 +73,12 @@ export function exportToBeerXml(recipe: Recipe): string {
     <EST_ABV>${recipe.calculated.abv.toFixed(1)}</EST_ABV>
     <IBU>${recipe.calculated.ibu}</IBU>
     <EST_COLOR>${(recipe.calculated.ebc / 1.97).toFixed(1)}</EST_COLOR>
-    <CARBONATION>${recipe.targetCarbonationVol.toFixed(1)}</CARBONATION>
     <FERMENTABLES>${grainNodes}
     </FERMENTABLES>
     <HOPS>${hopNodes}
     </HOPS>
+    <MISCS>${miscNodes}
+    </MISCS>
     <YEASTS>
       <YEAST>
         <NAME>${escapeXml(recipe.yeast.name)}</NAME>
@@ -197,6 +210,41 @@ export function importFromBeerXml(xmlString: string): Recipe | null {
       tempRange: [18, 22]
     };
 
+    // Парсинг дополнительных ингредиентов (MISC)
+    const otherIngredients: OtherIngredientItem[] = [];
+    const miscEls = recipeEl.querySelectorAll('MISC');
+    miscEls.forEach((mEl, idx) => {
+      const mName = mEl.querySelector('NAME')?.textContent?.trim() || `Добавка ${idx + 1}`;
+      const mAmountKg = parseFloat(mEl.querySelector('AMOUNT')?.textContent || '0.01');
+      const mUse = mEl.querySelector('USE')?.textContent?.trim().toLowerCase() || 'boil';
+      const mTime = parseFloat(mEl.querySelector('TIME')?.textContent || '10');
+      const mType = mEl.querySelector('TYPE')?.textContent?.trim().toLowerCase() || 'other';
+
+      let stage: OtherIngredientItem['stage'] = 'boil';
+      if (mUse.includes('mash')) stage = 'mash';
+      else if (mUse.includes('primary')) stage = 'primary';
+      else if (mUse.includes('secondary')) stage = 'secondary';
+      else if (mUse.includes('bottling')) stage = 'bottling';
+
+      let itype: OtherIngredientItem['type'] = 'other';
+      if (mType.includes('fining')) itype = 'fining';
+      else if (mType.includes('spice')) itype = 'spice';
+      else if (mType.includes('herb')) itype = 'herb';
+      else if (mType.includes('water')) itype = 'water_agent';
+      else if (mType.includes('flavor')) itype = 'flavor';
+      else if (mType.includes('sugar')) itype = 'sugar';
+
+      otherIngredients.push({
+        id: `imp_misc_${idx}_${Date.now()}`,
+        name: mName,
+        amount: mAmountKg < 0.1 ? Math.round(mAmountKg * 1000) : Number(mAmountKg.toFixed(2)),
+        unit: mAmountKg < 0.1 ? 'g' : 'kg',
+        stage,
+        timeMinOrDays: mTime,
+        type: itype
+      });
+    });
+
     const calculated = calculateBrewMetrics({
       batchSizeL: batchSizeL > 0 ? batchSizeL : 30,
       boilTimeMin: boilTimeMin > 0 ? boilTimeMin : 60,
@@ -211,7 +259,8 @@ export function importFromBeerXml(xmlString: string): Recipe | null {
       hops: hops.length > 0 ? hops : [
         { id: 'def_hop', name: 'Cascade', weightG: 30, alphaAcid: 6.0, boilTimeMin: 60, use: 'boil' }
       ],
-      yeast
+      yeast,
+      otherIngredients
     });
 
     return {
@@ -236,6 +285,7 @@ export function importFromBeerXml(xmlString: string): Recipe | null {
       ],
       mashSchedule,
       yeast,
+      otherIngredients,
       calculated,
       tags: ['BeerXML', 'Импорт'],
       isCustom: true,

@@ -23,7 +23,8 @@ import {
   Layers,
   Globe,
   Download,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Save
 } from 'lucide-react';
 import { OnlineRecipeHubModal } from './OnlineRecipeHubModal';
 import { BrewingHistoryCallout } from './BrewingHistoryCallout';
@@ -121,7 +122,7 @@ export const RecipeCatalogue: React.FC<Props> = ({
       }
       if (collectionFilter === 'favorites' && r.collection !== 'favorites') return false;
       if (collectionFilter === 'planned' && r.collection !== 'planned') return false;
-      if (collectionFilter === 'my_recipes' && !r.isCustom) return false;
+      if (collectionFilter === 'my_recipes' && !r.isCustom && r.collection !== 'my_recipes') return false;
 
       return true;
     });
@@ -177,11 +178,11 @@ export const RecipeCatalogue: React.FC<Props> = ({
         {/* Табы подборок */}
         <div className="flex flex-wrap items-center gap-2">
           {[
-            { id: 'all', label: 'Все рецепты' },
+            { id: 'all', label: `Все рецепты (${recipes.length})` },
             { id: 'kursk_only', label: '🌾 На Курском солоде' },
-            { id: 'favorites', label: 'Избранное ⭐' },
-            { id: 'planned', label: 'Планирую сварить 📌' },
-            { id: 'my_recipes', label: 'Мои авторские 🛠️' }
+            { id: 'favorites', label: `Избранное ⭐ (${recipes.filter(r => r.collection === 'favorites').length})` },
+            { id: 'planned', label: `Планирую 📌 (${recipes.filter(r => r.collection === 'planned').length})` },
+            { id: 'my_recipes', label: `Мои авторские 🛠️ (${recipes.filter(r => r.isCustom || r.collection === 'my_recipes').length})` }
           ].map(tab => (
             <button
               key={tab.id}
@@ -291,6 +292,18 @@ export const RecipeCatalogue: React.FC<Props> = ({
                           maxLengthThreshold={22}
                           speedSec={15}
                         />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1 mt-1">
+                        {(recipe.isCustom || recipe.collection === 'my_recipes') && (
+                          <span className="px-1.5 py-0.5 rounded-md text-[9px] font-extrabold bg-amber-500/15 text-amber-900 dark:text-amber-300 border border-amber-300/60 dark:border-amber-700/60">
+                            🛠️ Авторский
+                          </span>
+                        )}
+                        {recipe.otherIngredients && recipe.otherIngredients.length > 0 && (
+                          <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-orange-500/15 text-orange-800 dark:text-orange-300 border border-orange-300/60 dark:border-orange-700/60">
+                            🍯 +{recipe.otherIngredients.length} доп.
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -431,6 +444,25 @@ export const RecipeCatalogue: React.FC<Props> = ({
                     title="Запустить партию в календарь"
                   >
                     <Calendar className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const cloned: Recipe = {
+                        ...recipe,
+                        id: `recipe_custom_${Date.now()}`,
+                        name: `${recipe.name} (Авторский)`,
+                        author: 'Вы',
+                        isCustom: true,
+                        collection: 'my_recipes',
+                        updatedAt: new Date().toISOString()
+                      };
+                      onSelectRecipe(cloned);
+                    }}
+                    className="p-1.5 rounded-lg text-stone-400 hover:text-amber-600 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
+                    title="Скопировать в калькулятор как авторский рецепт"
+                  >
+                    <Save className="w-4 h-4" />
                   </button>
 
                   {recipe.isCustom && (

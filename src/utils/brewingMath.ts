@@ -3,6 +3,7 @@ import {
   CalculatedBrewParams,
   GrainItem,
   HopItem,
+  OtherIngredientItem,
   Recipe,
   StyleValidation,
   Yeast
@@ -64,6 +65,7 @@ export function calculateBrewMetrics(params: {
   grains: GrainItem[];
   hops: HopItem[];
   yeast: Yeast;
+  otherIngredients?: OtherIngredientItem[];
 }): CalculatedBrewParams {
   const {
     batchSizeL,
@@ -75,7 +77,8 @@ export function calculateBrewMetrics(params: {
     beerTempAtBottlingC,
     grains,
     hops,
-    yeast
+    yeast,
+    otherIngredients
   } = params;
 
   // 1. Расчет засыпи и начальной плотности (OG)
@@ -101,6 +104,34 @@ export function calculateBrewMetrics(params: {
     totalMcu += (weightLbs * lovibond) / batchSizeGal;
   }
 
+  // Расчет вклада сахаросодержащих дополнительных ингредиентов (мед, сахара, фрукты, экстракты)
+  let otherSugarFgPoints = 0;
+  if (otherIngredients && otherIngredients.length > 0) {
+    for (const item of otherIngredients) {
+      if (!item.amount || item.amount <= 0) continue;
+      let weightKg = item.amount;
+      if (item.unit === 'g' || item.unit === 'ml') weightKg = item.amount / 1000;
+      const weightLbs = weightKg * 2.20462;
+
+      if (item.colorEbc && item.colorEbc > 0) {
+        const lovibond = item.colorEbc / 1.97;
+        totalMcu += (weightLbs * lovibond) / batchSizeGal;
+      }
+
+      const extractPct = item.extractPercent !== undefined ? item.extractPercent : (item.type === 'sugar' ? 95 : 0);
+      if (extractPct > 0) {
+        // Чистый сахар дает ~46 PPG
+        const pointsPerLbGal = 46 * (extractPct / 100);
+        const pts = (pointsPerLbGal * weightLbs) / batchSizeGal;
+        totalGravityPoints += pts;
+
+        const fermPct = item.fermentablePercent !== undefined ? item.fermentablePercent : 100;
+        const unfermentablePts = pts * (1.0 - fermPct / 100);
+        otherSugarFgPoints += unfermentablePts;
+      }
+    }
+  }
+
   const ogPoints = totalGravityPoints > 0 ? totalGravityPoints : 0;
   const ogSg = Number((1.0 + ogPoints / 1000).toFixed(3));
   const ogPlato = sgToPlato(ogSg);
@@ -113,7 +144,8 @@ export function calculateBrewMetrics(params: {
   // 3. Расчет конечной плотности (FG) и ABV
   // Учет аттенюации дрожжей (по умолч. 75-80%)
   const attenuation = yeast.attenuationPercent / 100;
-  const fgPoints = ogPoints * (1.0 - attenuation);
+  const grainFgPoints = Math.max(0, (ogPoints - otherSugarFgPoints) * (1.0 - attenuation));
+  const fgPoints = Math.max(0, grainFgPoints + otherSugarFgPoints);
   const fgSg = Number((1.0 + fgPoints / 1000).toFixed(3));
   const fgPlato = sgToPlato(fgSg);
 

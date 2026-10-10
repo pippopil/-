@@ -1,4 +1,4 @@
-import { GrainItem, HopItem, MashRest, Recipe, Yeast } from '../types/brewing';
+import { GrainItem, HopItem, MashRest, OtherIngredientItem, Recipe, Yeast } from '../types/brewing';
 import { calculateBrewMetrics } from './brewingMath';
 
 /**
@@ -235,7 +235,107 @@ export function parseBirRfRecipe(html: string, sourceUrl?: string): Recipe | nul
       tempRange: [18, 22]
     };
 
-    // 10. Расчет характеристик
+    // 10. Парсинг дополнительных ингредиентов (Другие ингредиенты и Сахаросодержащие)
+    const otherIngredients: OtherIngredientItem[] = [];
+
+    // Другие ингредиенты (специи, мох, щепа, цедра и т.д.)
+    const otherBlockMatch = html.match(/Другие ингредиенты:<\/i><\/span>.*?<br \/>(.*?)(?:<span style=["']color:green["']|<b>Параметры|<center|$)/s);
+    if (otherBlockMatch && otherBlockMatch[1]) {
+      const itemLines = otherBlockMatch[1].split('<li>');
+      itemLines.forEach((line, idx) => {
+        const weightMatch = line.match(/<b>([0-9.]+)\s*(гр|г|кг|мл|шт)[^<]*<\/b>/i);
+        const nameMatch = line.match(/<a[^>]*>([^<]+)<\/a>/);
+        if (weightMatch && nameMatch) {
+          const amount = parseFloat(weightMatch[1]);
+          const rawUnit = weightMatch[2].toLowerCase();
+          const unit = rawUnit.startsWith('кг') ? 'kg' : rawUnit.startsWith('мл') ? 'ml' : rawUnit.startsWith('шт') ? 'pcs' : 'g';
+          const itemName = nameMatch[1].trim();
+
+          let stage: OtherIngredientItem['stage'] = 'boil';
+          let timeMinOrDays = 10;
+          const lower = line.toLowerCase();
+          if (lower.includes('котел') || lower.includes('кипят') || lower.includes('варк')) {
+            stage = 'boil';
+            const tm = line.match(/кипятить\s*([0-9]+)\s*мин/i);
+            if (tm) timeMinOrDays = parseInt(tm[1], 10);
+          } else if (lower.includes('брожен') || lower.includes('вторич') || lower.includes('тару')) {
+            stage = 'secondary';
+            timeMinOrDays = 7;
+          } else if (lower.includes('затор') || lower.includes('затиран')) {
+            stage = 'mash';
+            timeMinOrDays = 0;
+          } else if (lower.includes('бутылк') || lower.includes('розлив')) {
+            stage = 'bottling';
+            timeMinOrDays = 0;
+          }
+
+          let itemType: OtherIngredientItem['type'] = 'other';
+          const nameLower = itemName.toLowerCase();
+          if (nameLower.includes('мох') || nameLower.includes('вирофлок') || nameLower.includes('агар')) itemType = 'fining';
+          else if (nameLower.includes('щеп') || nameLower.includes('дуб') || nameLower.includes('палочк')) itemType = 'wood';
+          else if (nameLower.includes('цедр') || nameLower.includes('кориандр') || nameLower.includes('гвоздик') || nameLower.includes('кориц') || nameLower.includes('перец')) itemType = 'spice';
+          else if (nameLower.includes('кислот') || nameLower.includes('гипс') || nameLower.includes('мел') || nameLower.includes('соль')) itemType = 'water_agent';
+          else if (nameLower.includes('ваниль') || nameLower.includes('кофе') || nameLower.includes('какао')) itemType = 'flavor';
+
+          otherIngredients.push({
+            id: `bir_other_${idx}_${Date.now()}`,
+            name: itemName,
+            amount,
+            unit,
+            stage,
+            timeMinOrDays,
+            type: itemType,
+            notes: line.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+          });
+        }
+      });
+    }
+
+    // Сахаросодержащие ингредиенты (мёд, декстроза, сахара, соки)
+    const sugarBlockMatch = html.match(/Сахаросодержащие(?: ингредиенты)?:<\/i><\/span>.*?<br \/>(.*?)(?:<span style=["']color:green["']|<b>Параметры|<center|$)/s);
+    if (sugarBlockMatch && sugarBlockMatch[1]) {
+      const sugarLines = sugarBlockMatch[1].split('<li>');
+      sugarLines.forEach((line, idx) => {
+        const weightMatch = line.match(/<b>([0-9.]+)\s*(кг|г|гр|л|мл)[^<]*<\/b>/i);
+        const nameMatch = line.match(/<a[^>]*>([^<]+)<\/a>/);
+        if (weightMatch && nameMatch) {
+          const amount = parseFloat(weightMatch[1]);
+          const rawUnit = weightMatch[2].toLowerCase();
+          const unit = rawUnit.startsWith('кг') ? 'kg' : rawUnit.startsWith('мл') || rawUnit.startsWith('л') ? 'ml' : 'g';
+          const itemName = nameMatch[1].trim();
+
+          let extractPercent = 90;
+          let fermentablePercent = 100;
+          let colorEbc = 1;
+          const lower = itemName.toLowerCase();
+          if (lower.includes('мёд') || lower.includes('мед')) {
+            extractPercent = 82;
+            colorEbc = 1;
+          } else if (lower.includes('лактоз')) {
+            extractPercent = 90;
+            fermentablePercent = 10;
+          } else if (lower.includes('декстроз') || lower.includes('глюкоз')) {
+            extractPercent = 91;
+          }
+
+          otherIngredients.push({
+            id: `bir_sugar_${idx}_${Date.now()}`,
+            name: itemName,
+            amount,
+            unit,
+            stage: 'boil',
+            timeMinOrDays: 10,
+            type: 'sugar',
+            extractPercent,
+            fermentablePercent,
+            colorEbc,
+            notes: line.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+          });
+        }
+      });
+    }
+
+    // 11. Расчет характеристик
     const calculated = calculateBrewMetrics({
       batchSizeL,
       boilTimeMin,
@@ -246,7 +346,8 @@ export function parseBirRfRecipe(html: string, sourceUrl?: string): Recipe | nul
       beerTempAtBottlingC: 20,
       grains,
       hops,
-      yeast
+      yeast,
+      otherIngredients
     });
 
     return {
@@ -267,6 +368,7 @@ export function parseBirRfRecipe(html: string, sourceUrl?: string): Recipe | nul
       hops,
       mashSchedule,
       yeast,
+      otherIngredients,
       calculated,
       tags: ['Бир.РФ', style, category].filter(Boolean),
       isCustom: true,

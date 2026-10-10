@@ -426,13 +426,26 @@ export default function App() {
     localStorage.setItem('masterbrew_posts', JSON.stringify(posts));
   }, [posts]);
 
-  // Сохранение рецепта в базу
+  // Сохранение рецепта в базу авторских
   const handleSaveRecipe = (recipeToSave: Recipe) => {
-    const exists = recipes.some(r => r.id === recipeToSave.id);
-    if (exists) {
-      setRecipes(recipes.map(r => (r.id === recipeToSave.id ? recipeToSave : r)));
-    } else {
-      setRecipes([recipeToSave, ...recipes]);
+    const customized: Recipe = {
+      ...recipeToSave,
+      isCustom: true,
+      collection: 'my_recipes',
+      author: recipeToSave.author && recipeToSave.author !== 'МастерВарка' ? recipeToSave.author : 'Вы',
+      updatedAt: new Date().toISOString()
+    };
+    const exists = recipes.some(r => r.id === customized.id);
+    const updatedList = exists
+      ? recipes.map(r => (r.id === customized.id ? customized : r))
+      : [customized, ...recipes];
+
+    setRecipes(updatedList);
+    setCurrentRecipe(customized);
+    try {
+      localStorage.setItem('masterbrew_recipes', JSON.stringify(updatedList));
+    } catch (e) {
+      console.warn('LocalStorage save failed:', e);
     }
   };
 

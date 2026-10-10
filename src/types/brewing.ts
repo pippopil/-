@@ -120,6 +120,23 @@ export interface LabelDesign {
   customImageUrl?: string;
 }
 
+export type OtherIngredientStage = 'mash' | 'boil' | 'primary' | 'secondary' | 'bottling';
+export type OtherIngredientType = 'sugar' | 'spice' | 'fruit' | 'fining' | 'water_agent' | 'flavor' | 'wood' | 'herb' | 'other';
+
+export interface OtherIngredientItem {
+  id: string;
+  name: string;
+  amount: number;       // количество (например 1.0 кг или 50 г)
+  unit: 'g' | 'kg' | 'ml' | 'pcs' | 'drop'; // единицы измерения
+  stage: OtherIngredientStage; // этап внесения (затирание, кипячение, первичное/вторичное брожение, розлив)
+  timeMinOrDays?: number; // время (мин при кипячении, дней при выдержке)
+  type: OtherIngredientType;
+  colorEbc?: number;    // цветность EBC (для сахаров, сиропов, фруктов)
+  extractPercent?: number; // экстрактивность % (для сахаров, меда, соков, экстрактов)
+  fermentablePercent?: number; // сбраживаемость % (100% для декстрозы/меда, 10% для лактозы)
+  notes?: string;
+}
+
 export interface Recipe {
   id: string;
   name: string;
@@ -138,6 +155,7 @@ export interface Recipe {
   hops: HopItem[];
   mashSchedule: MashRest[];
   yeast: Yeast;
+  otherIngredients?: OtherIngredientItem[]; // Дополнительные ингредиенты (сахара, мед, хлопья, специи, фрукты, добавки)
   calculated: CalculatedBrewParams;
   labelDesign?: LabelDesign;
   tags: string[];

@@ -181,6 +181,44 @@ export const PrintableBrewSheet: React.FC<Props> = ({ recipe }) => {
         </table>
       </div>
 
+      {/* Дополнительные ингредиенты (если есть) */}
+      {recipe.otherIngredients && recipe.otherIngredients.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-base font-bold uppercase tracking-wider border-b border-stone-300 pb-1 mb-2 font-sans flex justify-between">
+            <span>Дополнительные ингредиенты и добавки</span>
+            <span className="text-xs font-normal lowercase">мёд, сахара, специи, фрукты, осветлители</span>
+          </h2>
+          <table className="w-full text-xs font-sans">
+            <thead>
+              <tr className="border-b border-stone-200 text-stone-500 text-left">
+                <th className="py-1">Наименование</th>
+                <th className="py-1">Количество</th>
+                <th className="py-1">Этап внесения</th>
+                <th className="py-1">Время</th>
+                <th className="py-1">Примечание</th>
+                <th className="py-1">Отметка</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recipe.otherIngredients.map((item) => (
+                <tr key={item.id} className="border-b border-stone-100">
+                  <td className="py-1 font-bold">{item.name}</td>
+                  <td className="py-1 font-mono">{item.amount} {item.unit}</td>
+                  <td className="py-1 font-mono">
+                    {item.stage === 'boil' ? 'Кипячение' : item.stage === 'mash' ? 'Затирание' : item.stage === 'primary' ? 'Главное брожение' : item.stage === 'secondary' ? 'Вторичное / Выдержка' : 'Розлив'}
+                  </td>
+                  <td className="py-1 font-mono">
+                    {item.timeMinOrDays !== undefined ? (item.stage === 'boil' ? `${item.timeMinOrDays} мин` : `${item.timeMinOrDays} дн.`) : '—'}
+                  </td>
+                  <td className="py-1 text-stone-600 italic text-[11px]">{item.notes || '—'}</td>
+                  <td className="py-1 font-mono text-stone-400">[  ]</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {/* Дрожжи и Карбонизация */}
       <div className="grid grid-cols-2 gap-6 mb-6">
         <div className="border border-stone-200 rounded p-3 text-xs font-sans">
